@@ -120,6 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Enriquecer miniatura (async)
         window.utils.enrichThumbnail(item, file);
         
+        if (file.path) {
+            window.utils.attachNativeFileDrag(item, () => file.path);
+        }
+
         // Navegación al hacer clic
         item.addEventListener('click', (e) => {
             if (e.button !== 0) return;

@@ -52,6 +52,7 @@ pub fn run() {
             filesystem::create_folder,
             filesystem::rename_folder,
             filesystem::delete_folder,
+            filesystem::import_dropped_items,
             
             // Sistema de Archivos - Recursos
             filesystem::list_resources,
@@ -62,6 +63,7 @@ pub fn run() {
             
             // Sistema de Archivos - Sistema
             filesystem::open_in_finder,
+            filesystem::start_drag_files,
 
             // Miniaturas
             thumbnails::generate_thumbnail,

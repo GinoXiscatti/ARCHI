@@ -4,6 +4,7 @@ console.log('Biblioteca module loaded');
 document.addEventListener('DOMContentLoaded', () => {
     const libraryGrid = document.getElementById('library-grid');
     const gridFinder = document.getElementById('grid-finder');
+
     // --- Estado ---
 
     // Historial de navegación
@@ -228,6 +229,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Enriquecer miniatura (async)
         window.utils.enrichThumbnail(item, file);
         
+        if (file.path) {
+            window.utils.attachNativeFileDrag(item, () => file.path);
+        }
+
         // Navegación al hacer clic
         item.addEventListener('click', (e) => {
             if (e.button !== 0) return;
@@ -289,6 +294,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeLateralTab) {
             const folderName = activeLateralTab.querySelector('.tab-text').textContent;
             loadFiles(folderName);
+        }
+    });
+
+    // Evento para recargar biblioteca desde fuera (Drag & Drop, etc)
+    document.addEventListener('reloadLibrary', (e) => {
+        const activeGrid = libraryGrid.style.display !== 'none' ? libraryGrid : gridFinder;
+        const currentPath = activeGrid.getAttribute('data-current-folder');
+        if (currentPath) {
+            loadFiles(currentPath, false);
         }
     });
 

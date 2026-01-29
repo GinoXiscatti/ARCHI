@@ -1,0 +1,10 @@
+/Users/ginoxiscatti/Desktop/ARCHI/src-tauri/drag-rs/target/debug/deps/cocoa-edb7a7d300459585.d: /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/lib.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/appkit.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/base.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/foundation.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/quartzcore.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/macros.rs
+
+/Users/ginoxiscatti/Desktop/ARCHI/src-tauri/drag-rs/target/debug/deps/libcocoa-edb7a7d300459585.rmeta: /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/lib.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/appkit.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/base.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/foundation.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/quartzcore.rs /Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/macros.rs
+
+/Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/lib.rs:
+/Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/appkit.rs:
+/Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/base.rs:
+/Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/foundation.rs:
+/Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/quartzcore.rs:
+/Users/ginoxiscatti/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cocoa-0.26.0/src/macros.rs:

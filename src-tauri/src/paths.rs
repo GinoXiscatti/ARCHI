@@ -59,7 +59,7 @@ pub fn get_config() -> AppConfig {
 pub fn save_config(config: AppConfig) -> Result<(), String> {
     let config_path = get_config_path();
     let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
-    
+
     // Asegurar que el directorio exista
     if let Some(parent) = config_path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;

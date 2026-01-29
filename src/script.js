@@ -10,6 +10,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Variables para rastrear el estado previo antes de entrar en Ajustes
     let lastActiveLateralTab = null;
     let lastActiveTopTab = null;
+    let isOptionPressed = false;
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Alt') {
+            isOptionPressed = true;
+        }
+    });
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'Alt') {
+            isOptionPressed = false;
+        }
+    });
 
     // ==========================================================================
     // UTILS & SHARED LOGIC
@@ -132,6 +144,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                         folder: body.folder, 
                         item: body.item, 
                         subfolder: body.subfolder 
+                    });
+                    return { status: 'success' };
+                }
+
+                if (url === '/api/start_drag' && method === 'POST') {
+                    await invoke('start_drag_files', { paths: body.paths });
+                    return { status: 'success' };
+                }
+
+                if (url === '/api/import_drop' && method === 'POST') {
+                    await invoke('import_dropped_items', { 
+                        folder: body.folder, 
+                        paths: body.paths,
+                        copyMode: body.copyMode 
                     });
                     return { status: 'success' };
                 }
@@ -400,6 +426,59 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.dispatchEvent(new CustomEvent('moduleActivated', { detail: { moduleId, source } }));
         },
 
+        attachNativeFileDrag(element, getPath, opts = {}) {
+            if (!element || typeof getPath !== 'function') return;
+            if (element.__archiNativeDragInstalled) return;
+            element.__archiNativeDragInstalled = true;
+
+            element.setAttribute('draggable', 'false');
+            element.addEventListener('dragstart', (ev) => {
+                ev.preventDefault();
+            });
+
+            const mediaNodes = element.querySelectorAll('img, video');
+            mediaNodes.forEach((node) => {
+                node.setAttribute('draggable', 'false');
+            });
+
+            const threshold = typeof opts.threshold === 'number' ? opts.threshold : 3;
+            const downEvent = 'mousedown';
+            const moveEvent = 'mousemove';
+            const upEvent = 'mouseup';
+            const cancelEvent = null;
+
+            const onDown = (e) => {
+                if (e.button !== 0) return;
+                const startX = e.clientX;
+                const startY = e.clientY;
+
+                const onMove = (ev) => {
+                    const dx = Math.abs(ev.clientX - startX);
+                    const dy = Math.abs(ev.clientY - startY);
+                    if (dx > threshold || dy > threshold) {
+                        cleanup();
+                        const path = getPath();
+                        if (path && window.__TAURI__ && window.__TAURI__.core) {
+                            window.__TAURI__.core.invoke('start_drag_files', { paths: [path] })
+                                .catch(err => console.error('Error starting drag:', err));
+                        }
+                    }
+                };
+
+                const cleanup = () => {
+                    document.removeEventListener(moveEvent, onMove);
+                    document.removeEventListener(upEvent, cleanup);
+                    if (cancelEvent) document.removeEventListener(cancelEvent, cleanup);
+                };
+
+                document.addEventListener(moveEvent, onMove);
+                document.addEventListener(upEvent, cleanup);
+                if (cancelEvent) document.addEventListener(cancelEvent, cleanup);
+            };
+
+            element.addEventListener(downEvent, onDown);
+        },
+
             applyConfig(config) {
                 if (!config) return;
                 
@@ -430,6 +509,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (window.loader) window.loader.updateProgress(10);
                 
                 const { invoke } = window.__TAURI__.core;
+                
+                // Escuchar evento de fin de arrastre para recargar biblioteca
+                if (window.__TAURI__.event) {
+                    window.__TAURI__.event.listen('drag-finished', () => {
+                        console.log('Drag finished, reloading library...');
+                        document.dispatchEvent(new CustomEvent('reloadLibrary'));
+                    });
+                }
+
                 await invoke('ensure_user_setup');
                 console.log('Setup de usuario verificado/completado');
                 
@@ -865,6 +953,123 @@ document.addEventListener('DOMContentLoaded', async () => {
             closeModal();
         }
     });
+
+    if (window.__TAURI__ && window.__TAURI__.event && typeof window.__TAURI__.event.listen === 'function') {
+        const getGrids = () => {
+            const libraryGrid = document.getElementById('library-grid');
+            const gridFinder = document.getElementById('grid-finder');
+            const resourcesGrid = document.getElementById('resources-grid');
+            return { libraryGrid, gridFinder, resourcesGrid };
+        };
+
+        const getActiveGrid = ({ libraryGrid, gridFinder, resourcesGrid }) => {
+            const bibliotecaModule = document.getElementById('M-Biblioteca');
+            const recursosModule = document.getElementById('M-Recursos');
+
+            if (bibliotecaModule && bibliotecaModule.classList.contains('active')) {
+                if (libraryGrid && libraryGrid.style.display !== 'none') return libraryGrid;
+                if (gridFinder) return gridFinder;
+            }
+
+            if (recursosModule && recursosModule.classList.contains('active')) {
+                if (resourcesGrid) return resourcesGrid;
+            }
+
+            return null;
+        };
+
+        const clearDragVisual = ({ libraryGrid, gridFinder, resourcesGrid }) => {
+            if (libraryGrid) {
+                libraryGrid.classList.remove('drag-over');
+                libraryGrid.style.removeProperty('border-color');
+            }
+            if (gridFinder) {
+                gridFinder.classList.remove('drag-over');
+                gridFinder.style.removeProperty('border-color');
+            }
+            if (resourcesGrid) {
+                resourcesGrid.classList.remove('drag-over');
+                resourcesGrid.style.removeProperty('border-color');
+            }
+        };
+
+        const handleExternalDrop = async (e) => {
+            const grids = getGrids();
+            clearDragVisual(grids);
+
+            let paths = null;
+            if (e && e.payload) {
+                if (Array.isArray(e.payload)) {
+                    paths = e.payload;
+                } else if (Array.isArray(e.payload.paths)) {
+                    paths = e.payload.paths;
+                }
+            }
+            
+            if (!paths || paths.length === 0) return;
+
+            const bibliotecaModule = document.getElementById('M-Biblioteca');
+            if (!bibliotecaModule || !bibliotecaModule.classList.contains('active')) return;
+
+            const activeGrid = getActiveGrid(grids);
+            if (!activeGrid) return;
+
+            const folder = activeGrid.getAttribute('data-current-folder');
+            if (!folder) return;
+
+            try {
+                const result = await window.utils.apiCall('/api/import_drop', { 
+                    folder, 
+                    paths,
+                    copyMode: isOptionPressed
+                }, 'POST');
+                if (result && result.status === 'success') {
+                    document.dispatchEvent(new CustomEvent('moduleActivated', { detail: { moduleId: 'M-Biblioteca', path: folder } }));
+                } else if (result && result.status === 'error') {
+                    const msg = result.error || 'No se pudo copiar los archivos';
+                    if (msg.includes('Operation not permitted')) {
+                        window.utils.showError(
+                            'Permiso denegado al leer archivo',
+                            'macOS no permite acceder a la ubicación de origen. Prueba copiar desde otra carpeta o revisa los permisos de privacidad en Preferencias del Sistema.'
+                        );
+                    } else {
+                        window.utils.showError('Error al importar archivos', msg);
+                    }
+                }
+            } catch (error) {
+                console.error('Error en import_drop', error);
+                const msg = error && error.toString ? error.toString() : String(error);
+                window.utils.showError('Error al importar archivos', msg);
+            }
+        };
+
+        window.__TAURI__.event.listen('tauri://drag-enter', () => {
+            const grids = getGrids();
+            const activeGrid = getActiveGrid(grids);
+            
+            if (activeGrid) {
+                activeGrid.classList.add('drag-over');
+                activeGrid.style.borderColor = 'var(--accent-color, #007aff)';
+            }
+        });
+
+        window.__TAURI__.event.listen('tauri://drag-leave', () => {
+            const grids = getGrids();
+            clearDragVisual(grids);
+        });
+
+        window.__TAURI__.event.listen('tauri://drag-drop', handleExternalDrop);
+        window.__TAURI__.event.listen('tauri://file-drop', handleExternalDrop);
+
+        // Forzar cursor de 'mover' en todo momento durante el arrastre
+        const forceMoveCursor = (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        };
+
+        document.addEventListener('dragenter', forceMoveCursor);
+        document.addEventListener('dragover', forceMoveCursor);
+    }
 
     window.addEventListener('keydown', (e) => {
         // Atajo para abrir/cerrar ajustes (Cmd + ,)

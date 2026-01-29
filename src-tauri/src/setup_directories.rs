@@ -1,4 +1,4 @@
-use crate::paths::{get_config, get_user_data_dir, get_cache_dir};
+use crate::paths::{get_cache_dir, get_config, get_user_data_dir};
 use std::fs;
 
 // ==========================================
@@ -8,7 +8,7 @@ use std::fs;
 #[tauri::command]
 pub fn ensure_user_setup() -> Result<(), String> {
     let user_data_dir = get_user_data_dir();
-    
+
     // 1. Crear directorio principal
     if !user_data_dir.exists() {
         fs::create_dir_all(&user_data_dir).map_err(|e| e.to_string())?;
@@ -34,9 +34,9 @@ pub fn ensure_user_setup() -> Result<(), String> {
 
 fn ensure_client_subfolders(user_data_dir: &std::path::Path) -> Result<(), String> {
     let required_subfolders = ["Recursos", "Biblioteca", "Contaduria", "Notas"];
-    
+
     let entries = fs::read_dir(user_data_dir).map_err(|e| e.to_string())?;
-    
+
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
