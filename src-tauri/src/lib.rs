@@ -30,6 +30,15 @@ pub fn run() {
             }
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                #[cfg(target_os = "macos")]
+                {
+                    api.prevent_close();
+                    window.hide().unwrap();
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             // Configuración
             paths::get_config,
@@ -53,6 +62,7 @@ pub fn run() {
             filesystem::rename_folder,
             filesystem::delete_folder,
             filesystem::import_dropped_items,
+            filesystem::import_dropped_resources,
             
             // Sistema de Archivos - Recursos
             filesystem::list_resources,
@@ -76,6 +86,16 @@ pub fn run() {
             // Sistema
             filesystem::open_config
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app, event| {
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    window.show().unwrap();
+                    window.set_focus().unwrap();
+                }
+            }
+        });
 }

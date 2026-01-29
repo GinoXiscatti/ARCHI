@@ -10,18 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Variables para rastrear el estado previo antes de entrar en Ajustes
     let lastActiveLateralTab = null;
     let lastActiveTopTab = null;
-    let isOptionPressed = false;
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Alt') {
-            isOptionPressed = true;
-        }
-    });
-    document.addEventListener('keyup', (e) => {
-        if (e.key === 'Alt') {
-            isOptionPressed = false;
-        }
-    });
+    let dropCopyMode = false;
+    let isAltPressed = false;
 
     // ==========================================================================
     // UTILS & SHARED LOGIC
@@ -155,6 +145,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (url === '/api/import_drop' && method === 'POST') {
                     await invoke('import_dropped_items', { 
+                        folder: body.folder, 
+                        paths: body.paths,
+                        copyMode: body.copyMode 
+                    });
+                    return { status: 'success' };
+                }
+
+                if (url === '/api/import_drop_resources' && method === 'POST') {
+                    await invoke('import_dropped_resources', { 
                         folder: body.folder, 
                         paths: body.paths,
                         copyMode: body.copyMode 
@@ -510,11 +509,39 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const { invoke } = window.__TAURI__.core;
                 
-                // Escuchar evento de fin de arrastre para recargar biblioteca
+                // Escuchar evento de fin de arrastre para recargar el grid activo
                 if (window.__TAURI__.event) {
                     window.__TAURI__.event.listen('drag-finished', () => {
-                        console.log('Drag finished, reloading library...');
-                        document.dispatchEvent(new CustomEvent('reloadLibrary'));
+                        console.log('Drag finished, reloading active grid...');
+
+                        const bibliotecaModule = document.getElementById('M-Biblioteca');
+                        const recursosModule = document.getElementById('M-Recursos');
+
+                        let moduleId = null;
+                        let folder = null;
+
+                        if (bibliotecaModule && bibliotecaModule.classList.contains('active')) {
+                            const libraryGrid = document.getElementById('library-grid');
+                            const gridFinder = document.getElementById('grid-finder');
+                            const activeGrid = (libraryGrid && libraryGrid.style.display !== 'none')
+                                ? libraryGrid
+                                : gridFinder;
+
+                            if (activeGrid) {
+                                folder = activeGrid.getAttribute('data-current-folder');
+                                moduleId = 'M-Biblioteca';
+                            }
+                        } else if (recursosModule && recursosModule.classList.contains('active')) {
+                            const resourcesGrid = document.getElementById('resources-grid');
+                            if (resourcesGrid) {
+                                folder = resourcesGrid.getAttribute('data-current-folder');
+                                moduleId = 'M-Recursos';
+                            }
+                        }
+
+                        if (!moduleId || !folder) return;
+
+                        document.dispatchEvent(new CustomEvent('moduleActivated', { detail: { moduleId, path: folder } }));
                     });
                 }
 
@@ -748,8 +775,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         resizeTimeout = setTimeout(async () => {
             if (window.__TAURI__) {
                 // Usar tamaño lógico (CSS pixels) para consistencia
-                const width = window.innerWidth;
-                const height = window.innerHeight;
+                const width = window.outerWidth || window.innerWidth;
+                const height = window.outerHeight || window.innerHeight;
 
                 try {
                     // Guardar nueva resolución
@@ -1008,23 +1035,43 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (!paths || paths.length === 0) return;
 
-            const bibliotecaModule = document.getElementById('M-Biblioteca');
-            if (!bibliotecaModule || !bibliotecaModule.classList.contains('active')) return;
-
             const activeGrid = getActiveGrid(grids);
             if (!activeGrid) return;
+
+            const bibliotecaModule = document.getElementById('M-Biblioteca');
+            const recursosModule = document.getElementById('M-Recursos');
+
+            let moduleId = null;
+            if (bibliotecaModule && bibliotecaModule.classList.contains('active')) {
+                moduleId = 'M-Biblioteca';
+            } else if (recursosModule && recursosModule.classList.contains('active')) {
+                moduleId = 'M-Recursos';
+            }
+
+            if (!moduleId) return;
 
             const folder = activeGrid.getAttribute('data-current-folder');
             if (!folder) return;
 
             try {
-                const result = await window.utils.apiCall('/api/import_drop', { 
-                    folder, 
-                    paths,
-                    copyMode: isOptionPressed
-                }, 'POST');
+                const copyMode = isAltPressed || dropCopyMode;
+                let result;
+                if (moduleId === 'M-Recursos') {
+                    result = await window.utils.apiCall('/api/import_drop_resources', { 
+                        folder, 
+                        paths,
+                        copyMode
+                    }, 'POST');
+                } else {
+                    result = await window.utils.apiCall('/api/import_drop', { 
+                        folder, 
+                        paths,
+                        copyMode
+                    }, 'POST');
+                }
+
                 if (result && result.status === 'success') {
-                    document.dispatchEvent(new CustomEvent('moduleActivated', { detail: { moduleId: 'M-Biblioteca', path: folder } }));
+                    document.dispatchEvent(new CustomEvent('moduleActivated', { detail: { moduleId, path: folder } }));
                 } else if (result && result.status === 'error') {
                     const msg = result.error || 'No se pudo copiar los archivos';
                     if (msg.includes('Operation not permitted')) {
@@ -1061,10 +1108,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.__TAURI__.event.listen('tauri://drag-drop', handleExternalDrop);
         window.__TAURI__.event.listen('tauri://file-drop', handleExternalDrop);
 
-        // Forzar cursor de 'mover' en todo momento durante el arrastre
         const forceMoveCursor = (e) => {
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+            if (!e.dataTransfer) return;
+            dropCopyMode = isAltPressed || !!e.altKey;
+            e.dataTransfer.dropEffect = dropCopyMode ? 'copy' : 'move';
         };
 
         document.addEventListener('dragenter', forceMoveCursor);
@@ -1072,7 +1120,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     window.addEventListener('keydown', (e) => {
-        // Atajo para abrir/cerrar ajustes (Cmd + ,)
+        if (e.key === 'Alt' || e.key === 'AltGraph' || e.key === 'Option') {
+            isAltPressed = true;
+        }
+
         if (e.metaKey && e.key === ',') {
             e.preventDefault();
             const settingsIcon = document.querySelector('.settings-icon');
@@ -1116,5 +1167,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         }
+    });
+
+    window.addEventListener('keyup', (e) => {
+        if (e.key === 'Alt' || e.key === 'AltGraph' || e.key === 'Option') {
+            isAltPressed = false;
+        }
+    });
+
+    window.addEventListener('blur', () => {
+        isAltPressed = false;
+        dropCopyMode = false;
     });
 });

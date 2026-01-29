@@ -618,6 +618,197 @@ pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool)
     }
 }
 
+#[tauri::command]
+pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: bool) -> Result<(), String> {
+    println!("Importing resources. Copy mode: {}", copy_mode);
+    let dest_dir = resolve_path(&folder, "Recursos");
+    if !dest_dir.exists() || !dest_dir.is_dir() {
+        return Err("Carpeta destino no encontrada".to_string());
+    }
+
+    fn unique_dest_path(dest_dir: &std::path::Path, base_name: &str, is_dir: bool) -> PathBuf {
+        let initial = dest_dir.join(base_name);
+        if !initial.exists() {
+            return initial;
+        }
+
+        let (stem, ext) = if !is_dir {
+            match base_name.rsplit_once('.') {
+                Some((s, e)) if !s.is_empty() && !e.is_empty() => (s.to_string(), Some(e.to_string())),
+                _ => (base_name.to_string(), None),
+            }
+        } else {
+            (base_name.to_string(), None)
+        };
+
+        for n in 2..10_000 {
+            let candidate_name = match &ext {
+                Some(e) => format!("{} ({}).{}", stem, n, e),
+                None => format!("{} ({})", stem, n),
+            };
+            let candidate = dest_dir.join(candidate_name);
+            if !candidate.exists() {
+                return candidate;
+            }
+        }
+
+        dest_dir.join(base_name)
+    }
+
+    fn copy_dir_recursive(src_dir: &std::path::Path, dest_dir: &std::path::Path) -> bool {
+        if let Err(e) = fs::create_dir_all(dest_dir) {
+            eprintln!("Error creando carpeta de destino {:?}: {}", dest_dir, e);
+            return false;
+        }
+
+        let mut success = true;
+        for entry in WalkDir::new(src_dir).follow_links(false).into_iter() {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) => {
+                    eprintln!("Error recorriendo carpeta {:?}: {}", src_dir, e);
+                    success = false;
+                    continue;
+                }
+            };
+
+            let src_path = entry.path();
+            if src_path == src_dir {
+                continue;
+            }
+
+            let rel = match src_path.strip_prefix(src_dir) {
+                Ok(r) => r,
+                Err(e) => {
+                    eprintln!("Error calculando ruta relativa {:?}: {}", src_path, e);
+                    success = false;
+                    continue;
+                }
+            };
+
+            let dest_path = dest_dir.join(rel);
+
+            if entry.file_type().is_dir() {
+                if let Err(e) = fs::create_dir_all(&dest_path) {
+                    eprintln!("Error creando subcarpeta {:?}: {}", dest_path, e);
+                    success = false;
+                }
+            } else {
+                if let Some(parent) = dest_path.parent() {
+                    if let Err(e) = fs::create_dir_all(parent) {
+                        eprintln!("Error creando carpeta padre {:?}: {}", parent, e);
+                        success = false;
+                        continue;
+                    }
+                }
+                if let Err(e) = fs::copy(src_path, &dest_path) {
+                    eprintln!("Error copiando archivo {:?} a {:?}: {}", src_path, dest_path, e);
+                    success = false;
+                }
+            }
+        }
+        success
+    }
+
+    let mut copied_any = false;
+    let mut last_error: Option<String> = None;
+    let mut skipped_same_dir = false;
+
+    for p in paths {
+        let src = PathBuf::from(p);
+        if !src.is_absolute() {
+            continue;
+        }
+        if !src.exists() {
+            continue;
+        }
+
+        if let Some(parent) = src.parent() {
+            if parent == dest_dir {
+                skipped_same_dir = true;
+                continue;
+            }
+        }
+
+        let file_name = match src.file_name().and_then(|n| n.to_str()) {
+            Some(n) if !n.is_empty() => n.to_string(),
+            _ => continue,
+        };
+
+        if src.is_dir() {
+            let dest = unique_dest_path(&dest_dir, &file_name, true);
+            
+            let mut moved = false;
+            if !copy_mode {
+                match fs::rename(&src, &dest) {
+                    Ok(_) => {
+                        copied_any = true;
+                        moved = true;
+                    }
+                    Err(e) => {
+                        println!("No se pudo renombrar carpeta (posiblemente entre discos): {}, intentando copia recursiva y borrado", e);
+                    }
+                }
+            }
+
+            if !moved {
+                if copy_dir_recursive(&src, &dest) {
+                    copied_any = true;
+                    if !copy_mode {
+                        if let Err(e) = fs::remove_dir_all(&src) {
+                            eprintln!("Error borrando carpeta original {:?}: {}", src, e);
+                            last_error = Some(format!("Se copió pero no se pudo borrar la carpeta original: {}", e));
+                        }
+                    }
+                } else {
+                     last_error = Some(format!("Error al copiar carpeta {:?}", src));
+                }
+            }
+        } else {
+            let dest = unique_dest_path(&dest_dir, &file_name, false);
+            
+            let mut moved = false;
+            if !copy_mode {
+                 match fs::rename(&src, &dest) {
+                    Ok(_) => {
+                        copied_any = true;
+                        moved = true;
+                    }
+                    Err(e) => {
+                        println!("No se pudo renombrar archivo (posiblemente entre discos): {}, intentando copiar y borrar", e);
+                    }
+                }
+            }
+
+            if !moved {
+                match fs::copy(&src, &dest) {
+                    Ok(_) => {
+                        copied_any = true;
+                        if !copy_mode {
+                            if let Err(e) = fs::remove_file(&src) {
+                                eprintln!("Error borrando archivo original {:?}: {}", src, e);
+                                last_error = Some(format!("Se copió pero no se pudo borrar el original: {}", e));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Error copiando archivo {:?} a {:?}: {}", src, dest, e);
+                        last_error = Some(format!("No se pudo copiar {:?}: {}", src, e));
+                    }
+                }
+            }
+        }
+    }
+
+    if copied_any {
+        Ok(())
+    } else if skipped_same_dir && last_error.is_none() {
+        Ok(())
+    } else {
+        Err(last_error.unwrap_or_else(|| "No se pudieron importar los archivos arrastrados".to_string()))
+    }
+}
+
 // ==========================================
 // OPERACIONES DE RECURSOS
 // ==========================================
