@@ -1,0 +1,9 @@
+/* Estilos para el módulo Recursos */
+#M-Recursos.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+}

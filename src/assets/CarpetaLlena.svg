@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Capa_2" data-name="Capa 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 146.88 113.08">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #727272;
+      }
+
+      .cls-2 {
+        fill: #eaeaea;
+        filter: url(#outer-glow-2);
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        stroke: #bababa;
+        stroke-miterlimit: 10;
+        stroke-width: .25px;
+      }
+
+      .cls-3 {
+        fill: #cdcccc;
+        filter: url(#outer-glow-3);
+      }
+
+      .cls-5 {
+        opacity: .38;
+      }
+
+      .cls-4 {
+        fill: #ddd;
+        filter: url(#outer-glow-1);
+      }
+
+      .cls-6 {
+        fill: #999;
+      }
+    </style>
+    <filter id="outer-glow-1" x="0" y="18.98" width="135.12" height="74.88" filterUnits="userSpaceOnUse">
+      <feOffset dx="0" dy="0"/>
+      <feGaussianBlur result="blur" stdDeviation="2"/>
+      <feFlood flood-color="#000" flood-opacity=".08"/>
+      <feComposite in2="blur" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="outer-glow-2" x="6.36" y="19.58" width="131.76" height="74.16" filterUnits="userSpaceOnUse">
+      <feOffset dx="0" dy="0"/>
+      <feGaussianBlur result="blur-2" stdDeviation="1"/>
+      <feFlood flood-color="#000" flood-opacity=".14"/>
+      <feComposite in2="blur-2" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+    <filter id="outer-glow-3" x="6.36" y="23.66" width="125.76" height="70.08" filterUnits="userSpaceOnUse">
+      <feOffset dx="0" dy="0"/>
+      <feGaussianBlur result="blur-3" stdDeviation="1"/>
+      <feFlood flood-color="#000" flood-opacity=".16"/>
+      <feComposite in2="blur-3" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="Capa_1-2" data-name="Capa 1">
+    <g>
+      <path class="cls-1" d="M130.69,112.78H6.6c-2.7,0-4.88-2.17-4.88-4.85V5.07C1.72,2.27,4.02,0,6.85,0h45.45l5.84,13.32h71.77c2.99,0,5.42,2.4,5.42,5.36l-.18,89.42c0,2.55-1.9,4.68-4.47,4.68Z"/>
+      <rect class="cls-4" x="6.16" y="25.22" width="122.74" height="62.35" rx=".99" ry=".99"/>
+      <rect class="cls-2" x="10.81" y="25.51" width="122.74" height="62.35" rx=".99" ry=".99" transform="translate(2.58 -3.14) rotate(2.54)"/>
+      <rect class="cls-3" x="10.44" y="28.84" width="117.49" height="59.68" rx=".99" ry=".99" transform="translate(-1.87 2.27) rotate(-1.86)"/>
+      <path class="cls-6" d="M6.94,113.08h123.15c2.56,0,4.75-1.84,5.15-4.34l11.56-71.41c.51-3.13-1.94-5.97-5.15-5.97H17.85c-2.58,0-4.78,1.87-5.16,4.39L1.78,107.15c-.48,3.12,1.97,5.93,5.16,5.93Z"/>
+      <g class="cls-5">
+        <path class="cls-1" d="M20.26,90h8.67l6.97,17.95h-8.21l-.95-3.07h-9.37l-2,3.07H7.16l13.1-17.95ZM20.23,100.5h5.14l-1.66-5.3-3.48,5.3Z"/>
+        <path class="cls-1" d="M57.54,89.98c3.86-.04,6.6,3.07,5.91,6.79-.23,1.35-.82,2.58-1.75,3.67-.92,1.08-2.05,1.91-3.37,2.46l3.22,5.04h-7.77l-2.77-4.38h-6.51l-.75,4.38h-7.29l3.06-17.95h18.02ZM45.92,95.23l-.52,3.06h8.89c.45,0,.85-.15,1.2-.44.37-.31.59-.67.66-1.08.15-.85-.45-1.54-1.34-1.54h-8.89Z"/>
+        <path class="cls-1" d="M90.04,100.48c-1.49,6.06-7.34,7.88-14.08,7.88-7.01-.01-12.47-1.96-11.28-8.76l.22-1.31c1.13-6.79,7.25-8.74,14.27-8.76,6.73.01,11.96,1.83,11.39,7.88h-7.47c-.38-1.76-2.38-2.18-4.89-2.18-2.99.04-5.6.55-6.07,3.5l-.08.44c-.54,2.93,1.9,3.46,4.87,3.5,2.51,0,4.67-.43,5.63-2.19h7.47Z"/>
+        <path class="cls-1" d="M99.28,101.79l-1.05,6.13h-7.29l3.06-17.95h7.29l-1.05,6.13h10.95l1.05-6.13h7.31l-3.06,17.95h-7.31l1.05-6.13h-10.95Z"/>
+        <path class="cls-1" d="M131.09,89.97l-3.06,17.95h-7.29l3.06-17.95h7.29Z"/>
+      </g>
+    </g>
+  </g>
+</svg>

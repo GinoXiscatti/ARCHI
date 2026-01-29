@@ -1,0 +1,642 @@
+/* ==========================================================================
+   VARIABLES & FONTS
+   ========================================================================== */
+
+:root {
+    /* Los colores se cargan desde config.json a través de index.html */
+}
+
+@font-face {
+    font-family: 'ClashDisplay';
+    src: url('assets/Fonts/ClashDisplay-Extralight.woff2') format('woff2');
+    font-weight: 200;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'ClashDisplay';
+    src: url('assets/Fonts/ClashDisplay-Light.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'ClashDisplay';
+    src: url('assets/Fonts/ClashDisplay-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'ClashDisplay';
+    src: url('assets/Fonts/ClashDisplay-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'ClashDisplay';
+    src: url('assets/Fonts/ClashDisplay-Semibold.woff2') format('woff2');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'ClashDisplay';
+    src: url('assets/Fonts/ClashDisplay-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Akira';
+    src: url('assets/Fonts/Akira Expanded Demo.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* ==========================================================================
+   BASE STYLES
+   ========================================================================== */
+
+body {
+    font-family: 'ClashDisplay', sans-serif;
+    background-color: #000000; /* Fondo negro puro */
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    color: white; /* Texto blanco por defecto para que sea visible en fondo negro */
+    display: flex; /* Para organizar sidebar y contenido */
+}
+
+
+
+/* ==========================================================================
+   TOP BAR
+   ========================================================================== */
+
+.top-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%; /* Ocupa todo el ancho */
+    height: 45px;
+    background-color: transparent;
+    box-sizing: border-box;
+    z-index: 20; /* Mayor z-index para estar por encima */
+    display: flex;
+    align-items: center;
+    padding: 0 0 0 15px;
+}
+
+.logo {
+    height: 24px; /* Ajuste proporcional para que no toque los bordes */
+    width: auto;
+    margin-right: 12px;
+}
+
+.top-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 45px;
+}
+
+.top-tab {
+    --tab-height: 35px;
+    background-color: transparent;
+    height: var(--tab-height);
+    min-width: auto;
+    padding: 0 15px;
+    border-radius: 5px 5px 0 0; /* Redondeado arriba */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    margin-right: 0;
+    position: relative;
+    margin-top: 10px;
+    margin-bottom: 0;
+    top: 0; /* Reseteado a 0 */
+}
+
+.top-tab:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    filter: brightness(1.1);
+    z-index: 15;
+}
+
+.top-tab:not(.active):active {
+    transform: scale(0.97);
+    translate: 0 1px;
+}
+
+.top-tab.active:active {
+    /* Eliminado cualquier cambio visual al hacer clic si ya está activa */
+}
+
+.top-tab.active {
+    --tab-height: 36px; /* Aumentamos 1px la altura total */
+    z-index: 25;
+    margin-bottom: 0;
+    top: 0; /* No movemos la posición superior */
+    
+    /* Borde degradado que respeta el redondeado */
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: 
+        linear-gradient(var(--primary-color), var(--primary-color)) padding-box,
+        linear-gradient(to bottom, var(--accent-color), var(--border-color)) border-box;
+}
+
+.top-tab-text {
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 14px; /* Igual que .tab-text */
+    font-weight: 700; /* Bold (el más grueso disponible para ClashDisplay) */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #717171;
+    transition: color 0.25s ease, transform 0.25s ease;
+    position: relative;
+    top: 2px;
+}
+
+.top-tab:not(.active):hover .top-tab-text {
+    color: var(--accent-color);
+}
+
+.top-tab.active .top-tab-text {
+    color: white;
+}
+
+.search-bar {
+    margin-left: auto;
+    margin-right: 10px;
+    height: 30px;
+    width: 260px;
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    margin: 0px 3px;
+    font-size: 20px;
+    width: 25px;
+    height: 25px;
+    color: #717171;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-placeholder {
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: #717171;
+}
+
+
+
+
+
+
+
+/* ==========================================================================
+   LATERAL BAR
+   ========================================================================== */
+
+.lateral-bar {
+    position: fixed;
+    top: 45px; /* Debajo de la top-bar */
+    left: 0;
+    width: 45px; /* Ancho base */
+    height: calc(100% - 45px);
+    background-color: transparent;
+    box-sizing: border-box;
+    z-index: 30; /* Aumentado para estar por encima del contenido */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.lateral-bar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%; /* Cubre todo el ancho de la barra lateral */
+    height: 40px; /* Un poco más de altura para un degradado más suave */
+    background: linear-gradient(to bottom, #000000 20%, transparent);
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lateral-bar::after {
+    content: "";
+    position: absolute;
+    bottom: 54px; /* Bajado 2px más (de 56px a 54px) */
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: linear-gradient(to top, #000000 20%, transparent);
+    z-index: 50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lateral-bar.show-top-fade::before {
+    opacity: 1;
+}
+
+.lateral-bar.show-bottom-fade::after {
+    opacity: 1;
+}
+
+.lateral-tabs {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: 100%;
+    margin-top: 0;
+    gap: 10px;
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: visible;
+    scrollbar-width: none;
+    padding-right: 2px;
+    z-index: 35; /* Asegura que las pestañas estén por encima de los fondos de la barra */
+}
+
+.lateral-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+/* Estilos para el ítem de Ajustes con animación de slide */
+.settings-tab {
+    margin-top: -118px; /* Subido 10px más (de -100px a -110px) cuando está oculto */
+    opacity: 0;
+    visibility: hidden;
+    transition: margin-top 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                opacity 0.3s ease, 
+                visibility 0.3s;
+    z-index: 10;
+}
+
+.settings-tab.show {
+    margin-top: 0;
+    opacity: 1;
+    visibility: visible;
+}
+
+.tabs-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Espacio entre tabs */
+    overflow-y: auto; /* Permitir scroll vertical */
+    overflow-x: hidden; /* Ocultar scroll horizontal */
+    scrollbar-width: none; /* Ocultar scrollbar en Firefox */
+}
+
+.tabs-container::-webkit-scrollbar {
+    display: none;
+}
+
+.lateral-tab {
+    --tab-width: 35px;
+    background-color: transparent;
+    width: var(--tab-width);
+    min-height: auto;
+    padding: 20px 0;
+    border-radius: 5px 0 0 5px;
+    display: flex;
+    flex-direction: column; /* Stack pin and text vertically */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    border: 1px solid var(--border-color);
+    border-right: none;
+    margin-bottom: 0;
+    position: relative;
+    padding: 15px 0;
+    height: auto;
+    flex-shrink: 0; /* Evita que las pestañas se aplasten */
+    gap: 2px; /* Space between pin icon and text */
+}
+
+.lateral-tab:not(.active):hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Sutil brillo al pasar el mouse */
+    filter: brightness(1.1);
+    z-index: 15;
+}
+
+.lateral-tab:not(.active):active {
+    transform: scale(0.97);
+    translate: 1px 0;
+    transition: transform 0.05s ease;
+}
+
+.lateral-tab.active:active {
+    /* Eliminado cualquier cambio visual al hacer clic si ya está activa */
+}
+
+.lateral-tab.active {
+    z-index: 40; /* Por encima de todo en la barra lateral */
+    margin-right: -10px; /* Se desplaza hacia la derecha, encima del contenido */
+    padding-right: 10px; /* Crece hacia la derecha sin mover el contenido interno */
+    width: var(--tab-width); /* Mantiene su ancho base, pero el padding lo extiende */
+    
+    /* Borde degradado que respeta el redondeado */
+    border: 1px solid transparent;
+    border-right: none;
+    background: 
+        linear-gradient(var(--primary-color), var(--primary-color)) padding-box,
+        linear-gradient(to right, var(--accent-color), var(--border-color)) border-box;
+}
+
+.lateral-tab.pinned,
+.lateral-tab.pinned.active {
+    padding-top: 11px;
+}
+
+.tab-text {
+    font-family: 'ClashDisplay', sans-serif;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg) translateX(-2px); /* Movido 2px a la izquierda (usando translateX después de la rotación) */
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 700; /* Bold (el más grueso disponible para ClashDisplay) */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #8b949e;
+    transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.pin-icon {
+    font-size: 14px;
+    color: #8b949e;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.25s ease;
+}
+
+.lateral-tab:not(.active):hover .pin-icon {
+    color: var(--accent-color);
+}
+
+.lateral-tab.active .pin-icon {
+    color: white;
+}
+
+.lateral-tab:not(.active):hover .tab-text {
+    color: var(--accent-color);
+}
+
+.lateral-tab.active .tab-text {
+    color: white;
+}
+
+.settings-bottom {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 0;
+    margin-top: auto; /* Empuja el elemento al final de la barra vertical */
+}
+
+.settings-icon {
+    cursor: pointer;
+    font-size: 25px;
+    color: white;
+    transition: color 0.3s ease, transform 0.4s ease;
+    display: inline-block;
+    margin-left: 2px; /* Movido 1px a la derecha */
+}
+
+.settings-icon:hover {
+    color: var(--accent-color);
+    transform: rotate(90deg);
+}
+
+.settings-icon:active {
+    transform: rotate(90deg) scale(0.85); /* Efecto de pulsación al hacer clic */
+    transition: transform 0.05s ease;
+}
+
+
+
+
+
+
+
+/* ==========================================================================
+   MAIN CONTENT
+   ========================================================================== */
+
+.content {
+    margin-top: 45px;
+    margin-left: 45px;
+    width: calc(100% - 45px);
+    height: calc(100% - 45px);
+    padding: 0; /* Eliminamos el padding para que el módulo ocupe todo */
+    box-sizing: border-box;
+}
+
+.library-module {
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    width: calc(100% - 10px);
+    height: calc(100% - 10px);
+    margin: 0 10px 10px 0;
+    box-sizing: border-box;
+    display: none; /* Oculto por defecto */
+    align-items: center;
+    justify-content: center;
+    border-radius: 0px 5px 5px 5px;
+    font-size: 24px;
+    font-weight: 600;
+    color: white;
+}
+
+.library-module.active {
+    display: flex; /* Solo se muestra el activo */
+}
+
+/* ==========================================================================
+   GLOBAL MODAL SYSTEM
+   ========================================================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.374);
+    display: none; /* Oculto por defecto */
+    justify-content: center;
+    align-items: center;
+    z-index: 20000;
+}
+
+.modal-overlay.show {
+    display: flex;
+}
+
+.modal-container {
+    background-color: #000000c7;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    width: 400px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Efecto de resplandor radial idéntico al menú contextual */
+.modal-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        300px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+        rgba(255, 255, 255, 0.08),
+        transparent 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-container:hover::after {
+    opacity: 1;
+}
+
+/* Línea de resalte recta por dentro (como el menú contextual) */
+.modal-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background-color: var(--accent-color);
+    z-index: 3;
+}
+
+.modal-header, .modal-body, .modal-footer {
+    position: relative;
+    z-index: 2; /* Asegurar que el contenido esté sobre el resplandor */
+}
+
+.modal-header h3 {
+    margin: 0 0 20px 0;
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+.modal-body {
+    margin-bottom: 24px;
+}
+
+.modal-message {
+    color: #d1d1d1;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    font-family: 'ClashDisplay', sans-serif;
+}
+
+#modal-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px 12px;
+    color: white;
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, color 0.2s ease;
+}
+
+#modal-input.is-duplicate {
+    color: var(--warning-color) !important;
+}
+
+
+#modal-input:focus {
+    border-color: var(--border-color);
+    box-shadow: none;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.modal-btn {
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, filter 0.2s ease, transform 0.1s ease;
+    border: none !important;
+    outline: none !important;
+}
+
+.modal-btn:active {
+    transform: translateY(1px);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: #d1d1d1;
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    filter: brightness(1.1);
+}
+
+.btn-primary {
+    background: var(--accent-color);
+    color: black;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+}

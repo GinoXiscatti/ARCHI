@@ -1,0 +1,521 @@
+/* M-Settings: Professional & Industrial Aesthetic */
+#M-Settings.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+}
+
+.settings-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row; /* Cambio a row para tener menú a la izquierda y grid a la derecha */
+    padding: 0;
+    box-sizing: border-box;
+    background-color: transparent;
+    color: #e0e0e0;
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 14px;
+    overflow: hidden; /* El scroll ahora estará en los contenedores hijos */
+}
+
+.settings-main-column {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+    gap: 10px;
+}
+
+.settings-menu-grid {
+    width: 300px; /* Ancho aumentado a 300px */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    gap: 10px;
+}
+
+.settings-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #8b949e;
+    user-select: none;
+    border: 1px solid var(--border-color);
+}
+
+.settings-menu-item span.material-symbols-rounded {
+    font-size: 20px;
+}
+
+.settings-menu-item .menu-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.settings-menu-item:hover {
+    background-color: rgba(93, 93, 93, 0.05);
+    color: var(--accent-color); /* Color de acento al pasar el mouse */
+}
+
+.settings-menu-item.active {
+    background-color: rgba(255, 255, 255, 0.03);
+    color: white; /* Color blanco cuando está activo */
+    border: 1px solid var(--accent-color);
+}
+
+.settings-menu-item:active {
+    transform: scale(0.99); /* Efecto de pulsación al hacer clic */
+    transition: transform 0.05s ease;
+}
+
+.settings-divider {
+    width: 1px;
+    height: 100%;
+    background-color: var(--border-color);
+    flex-shrink: 0;
+}
+
+.settings-grid {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    padding: 0;
+    overflow-y: auto; /* El scroll se queda en el grid de contenido */
+    scrollbar-gutter: stable;
+    box-sizing: border-box;
+}
+
+.settings-section-content {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    width: 100%;
+}
+
+.settings-section-content.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Aplicamos el estilo de scrollbar al settings-grid */
+.settings-grid::-webkit-scrollbar {
+    width: 10px;
+}
+
+.settings-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.settings-grid::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-radius: 5px 0 0 5px;
+    background-clip: content-box;
+}
+
+.settings-grid::-webkit-scrollbar-thumb:hover {
+    background-color: #666;
+}
+
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%; /* Asegura que la sección use todo el ancho */
+}
+
+.settings-section h3 {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--accent-color);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.primary-color-config,
+.accent-color-config,
+.system-preference-config {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Cambiado de space-between para usar el gap */
+    gap: 15px; /* Tu nuevo gap */
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    width: 100% !important;
+    box-sizing: border-box;
+    cursor: default;
+}
+
+.system-preference-config {
+    cursor: pointer;
+}
+
+.primary-color-config input[type="range"],
+.accent-color-config input[type="range"] {
+    cursor: pointer;
+}
+
+.system-preference-config:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Efecto hover */
+}
+
+
+.primary-color-config,
+.accent-color-config {
+    flex-direction: column;
+    align-items: stretch; /* Cambiado de flex-start a stretch para que los hijos usen todo el ancho */
+    gap: 15px;
+}
+
+.settings-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100% !important; /* Asegura que la info interna también se expanda */
+}
+
+.settings-info-row {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+}
+
+.settings-reset-color-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    align-self: stretch;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: transparent;
+    color: #8b949e;
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.settings-reset-color-btn .material-symbols-rounded {
+    font-size: 18px;
+    line-height: 1;
+    opacity: 0.9;
+}
+
+.settings-reset-color-text {
+    opacity: 0.9;
+}
+
+.settings-reset-color-btn:hover {
+    background-color: rgba(93, 93, 93, 0.05);
+    color: var(--accent-color);
+}
+
+.settings-reset-color-btn:active {
+    transform: scale(0.99);
+    transition: transform 0.05s ease;
+}
+
+.settings-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.settings-description {
+    font-size: 12px;
+    font-weight: 500;
+    color: #8b949e;
+}
+
+.cache-info-box {
+    cursor: default;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    align-items: stretch;
+}
+
+.cache-info-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.cache-info-title {
+    /* Hereda estilos de .settings-label */
+}
+
+.cache-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cache-info-label {
+    /* Hereda estilos de .settings-description */
+}
+
+.cache-info-value {
+    /* Hereda estilos de .settings-description */
+}
+
+.cache-info-footer {
+    margin-top: 4px;
+}
+
+.cache-info-note {
+    /* Hereda estilos de .settings-description */
+    opacity: 0.5;
+}
+
+.cache-info-box.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cache-info-icon-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cache-info-icon-column::after {
+    content: "";
+    flex: 1;
+    width: 1px;
+    margin-top: 4px;
+    border-radius: 999px;
+    background: linear-gradient(to bottom, var(--border-color), transparent);
+}
+
+.cache-info-divider {
+    flex: 1;
+    height: 1px;
+    border-radius: 999px;
+    background-color: var(--border-color);
+    opacity: 0.6;
+}
+
+.color-picker-container {
+    width: 100% !important; /* Forzar que el picker use todo el ancho */
+    display: flex;
+    gap: 20px;
+    align-items: center; /* Cambiado de stretch a center para que el preview no dependa del alto del contenedor */
+    background: rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    box-sizing: border-box; /* Asegura que el padding no aumente el ancho total */
+}
+
+.color-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--primary-color);
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+}
+
+.color-sliders {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.slider-group label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+}
+
+/* Custom Range Styles */
+.hsl-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 5px;
+    background: #333;
+    outline: none;
+}
+
+.hsl-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 5px;
+    background: white;
+    cursor: pointer;
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+    transform: translateZ(0) scale(1);
+    transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms ease, border-color 160ms ease;
+    will-change: transform;
+}
+
+.hsl-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.14);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.hsl-slider:active::-webkit-slider-thumb {
+    transform: scale(1.08) translateY(0.5px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.75);
+}
+
+.hsl-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.hsl-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 5px;
+    background: white;
+    cursor: pointer;
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+    transform: translateZ(0) scale(1);
+    transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms ease, border-color 160ms ease;
+    will-change: transform;
+}
+
+.hsl-slider:hover::-moz-range-thumb {
+    transform: scale(1.14);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.hsl-slider:active::-moz-range-thumb {
+    transform: scale(1.08) translateY(0.5px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.75);
+}
+
+.hsl-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+}
+
+.hue-slider {
+    background: linear-gradient(to right, 
+        #ff0000 0%, #ffff00 17%, #00ff00 33%, 
+        #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+}
+
+.saturation-slider {
+    background: linear-gradient(to right, #808080, var(--accent-color));
+}
+
+.lightness-slider {
+    background: linear-gradient(to right, #000, #fff);
+}
+
+.settings-description {
+    font-size: 12px;
+    color: #a0a0a0;
+    font-weight: 400;
+}
+
+#clear-cache-btn {
+    border-color: var(--warning-color);
+    background-color: rgba(255, 107, 107, 0.08);
+}
+
+#clear-cache-btn:hover {
+    background-color: rgba(255, 107, 107, 0.15);
+}
+
+/* --- Switch Toggle Estilizado --- */
+.switch-container {
+    display: flex;
+    align-items: center;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 24px;
+    height: 42px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider-switch {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .3s;
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.slider-switch:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #8b949e;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider-switch {
+    background-color: rgba(47, 165, 162, 0.2); /* Fondo suave con color de acento */
+    border-color: var(--accent-color);
+}
+
+input:checked + .slider-switch:before {
+    transform: translateY(-18px);
+    background-color: var(--accent-color);
+}
+
+input:focus + .slider-switch {
+    box-shadow: 0 0 1px var(--accent-color);
+}

@@ -1,0 +1,349 @@
+/* Estilos para el módulo Biblioteca */
+/* Estilo para el separador de ruta */
+.path-separator {
+    margin: 0 1px;
+}
+
+#M-Biblioteca.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* Alineado arriba */
+    align-items: stretch; /* Ocupar todo el ancho */
+    padding: 0;
+    overflow: hidden;
+}
+
+.library-grid {
+    flex: 1; /* Ocupa todo el espacio disponible */
+    width: 100%;
+    display: flex;
+    flex-direction: column; /* Organizado por filas (meses) */
+    gap: 10px; /* Separación de 10px entre filas solicitada */
+    padding: 10px 20px 20px 10px; /* Margen de 10px solicitado */
+    box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-gutter: stable; /* Evita que el contenido salte cuando aparece el scroll */
+}
+
+.grid-finder {
+    flex: 1; /* Ocupa todo el espacio disponible */
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 130px);
+    grid-auto-rows: min-content;
+    gap: 15px; /* Separación entre elementos */
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-gutter: stable; /* Evita que el contenido salte cuando aparece el scroll */
+    align-content: start; /* Alinear contenido arriba */
+}
+
+/* Modificación para centrar el empty-state */
+.grid-finder.is-empty,
+.library-grid.is-empty {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 100%;
+    align-items: center;
+    justify-items: center;
+    padding: 0;
+}
+
+/* Personalización de la barra de desplazamiento */
+.library-grid::-webkit-scrollbar,
+.grid-finder::-webkit-scrollbar {
+    width: 10px; /* Ancho de 10px solicitado */
+}
+
+.library-grid::-webkit-scrollbar-track,
+.grid-finder::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.library-grid::-webkit-scrollbar-thumb,
+.grid-finder::-webkit-scrollbar-thumb {
+    background-color: transparent; /* Gris medio */
+    border: 1px solid var(--border-color);
+    border-right: none; /* Quitar el borde del lado derecho solicitado */
+    border-radius: 4px 0 0 4px; /* Esquinas 1 (TL) y 4 (BL) redondeadas */
+    /* Para simular una longitud corta de ~150px, usamos bordes transparentes */
+    /* El navegador intentará ajustar el tamaño según el contenido, pero esto lo limita visualmente */
+    background-clip: content-box;
+}
+
+.library-grid::-webkit-scrollbar-thumb:hover,
+.grid-finder::-webkit-scrollbar-thumb:hover {
+    background-color: #666;
+}
+
+.month-row {
+    display: flex; /* Alineación horizontal: etiqueta | contenido (días + grid) */
+    align-items: flex-start;
+    width: 100%;
+    box-sizing: border-box;
+    background-color: transparent;
+}
+
+.month-label {
+    writing-mode: vertical-rl;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate(-20px, -50%) rotate(180deg);
+    font-family: 'ClashDisplay', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: #8b949e; /* Color solicitado */
+    opacity: 1;
+    white-space: nowrap;
+}
+
+.month-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px; /* Reducido a 2px para acercar los días al rectángulo */
+    padding-left: 25px; /* Espacio para la etiqueta lateral */
+}
+
+.grid-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.days-row {
+    display: grid;
+    /* Misma configuración que el grid de archivos para que se alineen */
+    grid-template-columns: repeat(auto-fill, 130px);
+    gap: 5px;
+    padding: 10px 6px 0; /* 1px border + 5px padding del grid de abajo */
+    box-sizing: border-box;
+}
+
+.day-indicator {
+    font-family: 'ClashDisplay', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    color: #8b949e; /* Color solicitado */
+    text-align: center;
+    width: 130px;
+}
+
+.day-indicator.no-metadata {
+    color: var(--warning-color); /* Usar la variable configurable */
+}
+
+.month-files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 130px); 
+    grid-auto-rows: min-content;
+    gap: 5px;
+    justify-content: start;
+    
+    /* El RECTÁNGULO con borde */
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: 5px; 
+}
+
+.file-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0; /* Padding movido a los elementos internos si es necesario */
+    width: 130px; /* Ancho fijo igual al de la columna */
+    aspect-ratio: 191.7267 / 256.6792;
+    height: auto; /* Altura calculada por aspect-ratio */
+    border-radius: 5px;
+    border: 1px solid transparent; /* Borde transparente base para evitar saltos */
+    transition: background-color 0.2s, border-color 0.2s;
+    cursor: pointer;
+    text-align: center;
+    box-sizing: border-box;
+    overflow: hidden; /* Para que la miniatura respete el border-radius del padre */
+    /* Optimizaciones de renderizado */
+    backface-visibility: hidden;
+    transform: translateZ(0);
+}
+
+.file-thumbnail-container {
+    width: 100%;
+    height: calc(50% + 10px);
+    flex-shrink: 0; /* Evita que el contenedor se encoja si hay mucho texto abajo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.file-thumbnail-img,
+.file-thumbnail-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* border-radius: 4px;  El padre ya tiene overflow: hidden y border-radius, así que esto podría ser redundante pero no hace daño */
+    display: block;
+}
+
+.file-item:hover {
+    background-color: rgba(88, 88, 88, 0.092);
+    border: 1px solid var(--border-color);
+}
+
+.file-icon-svg {
+    width: 100px;
+    height: 79px;
+    object-fit: contain;
+    position: relative;
+    top: 2px;
+    left: 3px;
+    pointer-events: none; /* Evita que el icono interfiera con eventos */
+}
+
+.file-info-container {
+    flex: 1;
+    width: 100%;
+    min-height: 0; /* Permite que el contenedor se ajuste estrictamente al espacio sobrante */
+    padding: 2px 10px 7px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between; /* Alinea Tipo arriba y el resto abajo */
+    box-sizing: border-box;
+    gap: 0;
+}
+
+.file-top-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0; /* Pegado como se solicitó */
+    width: 100%;
+}
+
+.file-type-label {
+    font-family: 'ClashDisplay', sans-serif;
+    font-weight: 400; /* Light */
+    font-size: 10px; /* Reducido para que quepa */
+    color: #8b949e;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.file-name {
+    font-family: 'ClashDisplay', sans-serif;
+    font-weight: 500; /* Medium */
+    font-size: 13px; /* Reducido */
+    color: var(--text-color);
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* white-space: nowrap; Eliminado para permitir 2 líneas */
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Máximo 2 líneas */
+    -webkit-box-orient: vertical;
+    line-height: 1.2;
+    margin-bottom: 0;
+}
+
+.file-count-label {
+    font-family: 'ClashDisplay', sans-serif;
+    font-weight: 400;
+    font-size: 10px;
+    color: #8b949e;
+    margin-top: auto; /* Empuja hacia abajo */
+}
+
+/* Empty state styles */
+.empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+    color: var(--accent-color);
+    text-align: center;
+    animation: fadeInScale 0.3s ease-out forwards;
+    
+    /* Para que funcione en CSS Grid ocupando todo el ancho */
+    grid-column: 1 / -1;
+    min-height: 300px;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 0.5;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.empty-icon {
+    font-size: 64px;
+    filter: grayscale(1); /* Para que el emoji sea más sutil y no rompa la estética monocromática */
+    animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin-bottom: 15px;
+}
+
+@keyframes bounceIn {
+    from {
+        transform: scale(0);
+    }
+    to {
+        transform: scale(1);
+    }
+}
+
+.empty-text {
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: #ffffff; /* Texto en blanco puro */
+}
+
+/* Path Bar Styles - Moved from M-Recursos.css to share */
+.path-bar {
+    width: 100%;
+    height: 30px;
+    background-color: var(--primary-color);
+    border-top: 1px solid var(--border-color);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #8b949e;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.path-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-count-text {
+    flex-shrink: 0;
+    margin-left: 15px;
+}
+
+/* Modificación para permitir texto normal en la ruta si la configuración lo activa */
+body.lowercase-path .path-bar,
+body.lowercase-path .path-text {
+    text-transform: none;
+}

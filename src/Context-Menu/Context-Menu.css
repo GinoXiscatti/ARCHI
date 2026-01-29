@@ -1,0 +1,82 @@
+/* Context Menu Global Styles - Professional & Serious Aesthetic */
+.context-menu {
+    position: fixed;
+    z-index: 10000;
+    background-color: #000000c7; /* Fondo oscuro sólido y serio */
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color); /* Borde muy sutil */
+    border-radius: 5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* Solo sombra, quitamos el inset */
+    padding: 4px 0;
+    min-width: 180px;
+    display: none;
+    flex-direction: column;
+    pointer-events: all;
+    overflow: hidden; /* Importante para que la línea recta no se salga */
+}
+
+/* Efecto de resplandor radial que sigue al mouse */
+.context-menu::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        300px circle at var(--mouse-x, 0) var(--mouse-y, 0),
+        rgba(255, 255, 255, 0.116),
+        transparent 60%
+    );
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.context-menu:hover::after {
+    opacity: 1;
+}
+
+/* Línea de resalte recta por dentro */
+.context-menu::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background-color: var(--accent-color);
+    z-index: 3; /* Por encima de todo */
+}
+
+.context-menu-item {
+    padding: 6px 12px;
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 12px; /* Tamaño estándar de menús profesionales */
+    font-weight: 400;
+    color: #d1d1d1; /* Texto gris claro, no blanco puro, para reducir fatiga visual */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 2; /* Por encima del resplandor radial */
+    transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.context-menu-item:hover {
+    background-color: rgba(114, 114, 114, 0.15); /* Highlight sutil */
+}
+
+.context-menu-item[data-action="delete"]:hover,
+.context-menu-item[data-action="delete-client"]:hover {
+    background-color: color-mix(in srgb, var(--accent-color) 70%, transparent 100%); /* Fondo rojo sutil para eliminar */
+}
+
+.context-menu-divider {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.08); /* Divisor muy tenue */
+    margin: 4px 0;
+    position: relative;
+    z-index: 2;
+}

@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCHI</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="Load-Screen/loader.css">
+    <link rel="stylesheet" href="Context-Menu/Context-Menu.css">
+    
+    <!-- Carga dinámica de estilos de módulos -->
+    <link rel="stylesheet" href="M-Settings/M-Settings.css">
+    <link rel="stylesheet" href="M-Inicio/M-Inicio.css">
+    <link rel="stylesheet" href="M-Recursos/M-Recursos.css">
+    <link rel="stylesheet" href="M-Biblioteca/M-Biblioteca.css">
+    <link rel="stylesheet" href="M-Contaduria/M-Contaduria.css">
+
+    <style>
+        :root {
+            --primary-color: #111b23;
+            --border-color: rgba(124, 124, 124, 0.33);
+            --accent-color: #2fa5a2;
+            --warning-color: #ff6b6b;
+        }
+    </style>
+</head>
+
+
+
+
+
+
+<body class="">
+    <div id="loader-screen">
+        <img src="assets/LogotipoARCHI.svg" alt="Cargando..." class="loader-logo">
+        <div class="loader-progress-container">
+            <div class="loader-progress-bar"></div>
+        </div>
+        <div class="loader-status-text">Iniciando...</div>
+        <button id="loader-cancel-btn" class="loader-cancel-btn" style="display: none;">Salir</button>
+    </div>
+
+
+
+    <header class="top-bar">
+        <img src="assets/LogotipoARCHI.svg" alt="ARCHI Logo" class="logo">
+        <div class="top-tabs">
+            <div class="top-tab active" data-module="M-Inicio">
+                <span class="top-tab-text">Inicio</span>
+            </div>
+            <div class="top-tab" data-module="M-Recursos">
+                <span class="top-tab-text">Recursos</span>
+            </div>
+            <div class="top-tab" data-module="M-Biblioteca">
+                <span class="top-tab-text">Biblioteca</span>
+            </div>
+            <div class="top-tab" data-module="M-Contaduria">
+                <span class="top-tab-text">Contaduría</span>
+            </div>
+        </div>
+        <div class="search-bar">
+            <span class="material-symbols-rounded search-icon">search</span>
+            <span class="search-placeholder">Buscar...</span>
+        </div>
+    </header>
+
+
+
+    <aside class="lateral-bar">
+        <div class="lateral-tabs">
+            <!-- Ítem de Configuración (Oculto por defecto arriba) -->
+            <div class="lateral-tab settings-tab" id="lateral-tab-settings" data-module="M-Settings">
+                <span class="tab-text">Ajustes</span>
+            </div>
+
+            <!-- Los clientes se cargarán dinámicamente aquí mediante JS -->
+        </div>
+        <div class="settings-bottom">
+            <span class="material-symbols-rounded settings-icon">settings</span>
+        </div>
+    </aside>
+
+
+
+    <main class="content">
+        <div class="library-module active" id="M-Inicio">
+            <!-- Inicio Module content placeholder -->
+            <div style="padding: 20px; color: white;">Bienvenido a ARCHI</div>
+        </div>
+        <div class="library-module" id="M-Recursos">
+            <div class="grid-finder" id="resources-grid"></div>
+            <div class="path-bar">
+                <span class="path-text">/Recursos</span>
+                <span class="item-count-text" id="resources-path-item-count">0 ELEMENTOS</span>
+            </div>
+        </div>
+        <div class="library-module" id="M-Biblioteca">
+               <div class="library-grid" id="library-grid"></div>
+               <div class="grid-finder" id="grid-finder" style="display: none;"></div>
+               <div class="path-bar">
+                    <span class="path-text">/Carpeta de ejemplo</span>
+                    <span class="item-count-text" id="path-item-count">0 ELEMENTOS</span>
+                </div>
+           </div>
+        <div class="library-module" id="M-Contaduria">
+            <div style="padding: 20px; color: white;">Módulo de Contaduría</div>
+        </div>
+
+
+
+
+
+
+
+
+        
+        <!-- Módulo de Configuración -->
+        <div class="library-module" id="M-Settings">
+            <div class="settings-container">
+                <div class="settings-menu-grid">
+                    <div class="settings-menu-item active" data-section="tema">
+                        <span class="material-symbols-rounded">palette</span>
+                        <span class="menu-text">Tema</span>
+                    </div>
+                    <div class="settings-menu-item" data-section="preferencias">
+                        <span class="material-symbols-rounded">settings</span>
+                        <span class="menu-text">Preferencias</span>
+                    </div>
+                    <div class="settings-menu-item" data-section="cache">
+                        <span class="material-symbols-rounded">cached</span>
+                        <span class="menu-text">Caché</span>
+                    </div>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="settings-main-column">
+                <div class="settings-grid">
+                    <!-- Sección de Colores (Tema) -->
+                    <div class="settings-section-content active" id="settings-section-tema">
+                        <div class="settings-section">
+                            <h3>Colores</h3>
+                            <div class="primary-color-config">
+                                <div class="settings-info-row">
+                                    <div class="settings-info">
+                                        <span class="settings-label">Color Primario</span>
+                                        <span class="settings-description">Ajusta el tono base de la aplicación (Fondo)</span>
+                                    </div>
+                                    <button type="button" class="settings-reset-color-btn" id="primary-reset-color-btn" aria-label="Restablecer color" title="Restablecer color">
+                                        <span class="material-symbols-rounded">restart_alt</span>
+                                        <span class="settings-reset-color-text">Restablecer</span>
+                                    </button>
+                                </div>
+                                <div class="color-picker-container">
+                                    <div class="color-preview" id="primary-color-preview" style="background-color: #111b23;"></div>
+                                    <div class="color-sliders">
+                                        <div class="slider-group">
+                                            <label>Matiz</label>
+                                            <input type="range" id="primary-hue" min="0" max="360" value="200" class="hsl-slider hue-slider">
+                                        </div>
+                                        <div class="slider-group">
+                                            <label>Saturación</label>
+                                            <input type="range" id="primary-saturation" min="0" max="100" value="30" class="hsl-slider saturation-slider">
+                                        </div>
+                                        <div class="slider-group">
+                                            <label>Brillo</label>
+                                            <input type="range" id="primary-lightness" min="0" max="25" value="10" class="hsl-slider lightness-slider">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accent-color-config">
+                                <div class="settings-info-row">
+                                    <div class="settings-info">
+                                        <span class="settings-label">Color de Acento</span>
+                                        <span class="settings-description">Cambia el color de resalte de la interfaz</span>
+                                    </div>
+                                    <button type="button" class="settings-reset-color-btn" id="accent-reset-color-btn" aria-label="Restablecer color" title="Restablecer color">
+                                        <span class="material-symbols-rounded">restart_alt</span>
+                                        <span class="settings-reset-color-text">Restablecer</span>
+                                    </button>
+                                </div>
+                                <div class="color-picker-container">
+                                    <div class="color-preview" id="accent-color-preview" style="background-color: #2fa5a2;"></div>
+                                    <div class="color-sliders">
+                                        <div class="slider-group">
+                                            <label>Matiz</label>
+                                            <input type="range" id="accent-hue" min="0" max="360" value="200" class="hsl-slider hue-slider">
+                                        </div>
+                                        <div class="slider-group">
+                                            <label>Saturación</label>
+                                            <input type="range" id="accent-saturation" min="0" max="100" value="100" class="hsl-slider saturation-slider">
+                                        </div>
+                                        <div class="slider-group">
+                                            <label>Brillo</label>
+                                            <input type="range" id="accent-lightness" min="50" max="100" value="50" class="hsl-slider lightness-slider">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección de Preferencias (Sistema) -->
+                    <div class="settings-section-content" id="settings-section-preferencias" style="display: none;">
+                        <div class="settings-section">
+                            <h3>Sistema</h3>
+                            <div class="system-preference-config">
+                                <div class="switch-container">
+                                    <label class="switch">
+                                        <input type="checkbox" id="remember-module-toggle" checked>
+                                        <span class="slider-switch"></span>
+                                    </label>
+                                </div>
+                                <div class="settings-info">
+                                    <span class="settings-label">Recordar último módulo</span>
+                                    <span class="settings-description">Abre la app en el último módulo visitado</span>
+                                </div>
+                            </div>
+                            
+                            <div class="system-preference-config">
+                                <div class="switch-container">
+                                    <label class="switch">
+                    <input type="checkbox" id="lowercase-path-toggle">
+                    <span class="slider-switch"></span>
+                </label>
+                                </div>
+                                <div class="settings-info">
+                                    <span class="settings-label">Ruta en mayúscula</span>
+                                    <span class="settings-description">Muestra la ruta respetando mayúsculas y minúsculas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección de Cache -->
+                    <div class="settings-section-content" id="settings-section-cache" style="display: none;">
+                        <div class="settings-section">
+                            <h3>Cache</h3>
+                            
+                            <div class="system-preference-config" id="generate-cache-btn">
+                                <span class="material-symbols-rounded" style="color: #8b949e;">play_arrow</span>
+                                <div class="settings-info">
+                                    <span class="settings-label">Generar todo el caché</span>
+                                    <span class="settings-description">Escanear y generar miniaturas para toda la biblioteca</span>
+                                </div>
+                            </div>
+
+                            <div class="system-preference-config" id="open-cache-btn">
+                                <span class="material-symbols-rounded" style="color: #8b949e;">folder_open</span>
+                                <div class="settings-info">
+                                    <span class="settings-label">Abrir carpeta de cache</span>
+                                    <span class="settings-description">Abre la ubicación de la caché en el explorador</span>
+                                </div>
+                            </div>
+
+                            <div class="system-preference-config" id="clear-cache-btn">
+                                <span class="material-symbols-rounded" style="color: var(--warning-color);">delete</span>
+                                <div class="settings-info">
+                                    <span class="settings-label">Limpiar TODO el cache</span>
+                                    <span class="settings-description">Advertencia: esta acción elimina todo el caché de la aplicación</span>
+                                </div>
+                            </div>
+                            
+                            <div id="cache-status" style="margin-top: 10px; font-size: 12px; color: #8b949e; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="system-preference-config cache-info-box" id="cache-info-panel" style="display: none;">
+                    <div class="cache-info-icon-column">
+                        <span class="material-symbols-rounded" style="color: #8b949e;">info</span>
+                    </div>
+                    <div class="settings-info">
+                        <span class="settings-label cache-info-title">Estado del caché</span>
+                        <div class="cache-info-row">
+                            <span class="settings-description cache-info-label">Elementos en caché</span>
+                            <span class="cache-info-divider"></span>
+                            <span class="settings-description cache-info-value" id="cache-items-count">—</span>
+                        </div>
+                        <div class="cache-info-row">
+                            <span class="settings-description cache-info-label">Sin caché</span>
+                            <span class="cache-info-divider"></span>
+                            <span class="settings-description cache-info-value" id="cache-missing-count">—</span>
+                        </div>
+                        <div class="cache-info-row">
+                            <span class="settings-description cache-info-label">Peso total del caché</span>
+                            <span class="cache-info-divider"></span>
+                            <span class="settings-description cache-info-value" id="cache-total-size">—</span>
+                        </div>
+                        <div class="cache-info-footer">
+                            <span class="settings-description cache-info-note">El sistema de caché se gestiona solo. Se actualiza cuando detecta cambios y elimina automáticamente archivos huérfanos o no utilizados</span>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="script.js"></script>
+    <script src="Load-Screen/loader.js"></script>
+    <script src="Context-Menu/Context-Menu.js"></script>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Global Context Menu -->
+    <div id="global-context-menu" class="context-menu">
+        <!-- Acciones de Biblioteca (Grid) -->
+        <div class="context-menu-group" data-group="grid">
+            <div class="context-menu-item" data-action="create-work">Crear Trabajo</div>
+            <div class="context-menu-item" data-action="rename">Renombrar</div>
+            <div class="context-menu-item" data-action="show-in-finder">Ver en Finder</div>
+            <div class="context-menu-divider"></div>
+            <div class="context-menu-item" data-action="delete">Eliminar</div>
+        </div>
+
+        <!-- Acciones de Clientes (Lateral Bar) -->
+        <div class="context-menu-group" data-group="lateral">
+            <div class="context-menu-item" data-action="create-client">Crear Cliente</div>
+            <div class="context-menu-item" data-action="rename-client">Renombrar Cliente</div>
+            <div class="context-menu-item" data-action="toggle-pin">Anclar</div>
+            <div class="context-menu-divider"></div>
+            <div class="context-menu-item" data-action="delete-client">Eliminar Cliente</div>
+        </div>
+
+        <!-- Acciones de Configuración -->
+        <div class="context-menu-group" data-group="settings">
+            <div class="context-menu-item" data-action="reset-color">Restablecer Color</div>
+            <div class="context-menu-item" data-action="open-config">Abrir Archivo de Configuración</div>
+        </div>
+    </div>
+    
+    <!-- Global Modal System -->
+    <div id="global-modal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modal-title">Título del Modal</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message" class="modal-message" style="display: none;"></p>
+                <input type="text" id="modal-input" class="modal-input" placeholder="Nombre...">
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel" class="modal-btn btn-secondary">Cancelar</button>
+                <button id="modal-confirm" class="modal-btn btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <!-- Carga dinámica de scripts de módulos -->
+    <script src="M-Settings/M-Settings.js"></script>
+    <script src="M-Inicio/M-Inicio.js"></script>
+    <script src="M-Recursos/M-Recursos.js"></script>
+    <script src="M-Biblioteca/M-Biblioteca.js"></script>
+    <script src="M-Contaduria/M-Contaduria.js"></script>
+</body>
+</html>
