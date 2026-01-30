@@ -7,14 +7,140 @@
 #M-Biblioteca.active {
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* Alineado arriba */
-    align-items: stretch; /* Ocupar todo el ancho */
+    justify-content: flex-start;
+    align-items: stretch;
     padding: 0;
     overflow: hidden;
+    min-height: 0;
+}
+
+.grid-work-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    flex: 1;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    min-height: 0;
+}
+
+.note-work {
+    width: 100px;
+    height: 100%;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    min-height: 0;
+}
+
+.note-work.is-collapsed {
+    width: 0 !important;
+    border-right: none;
+}
+
+.note-work.is-collapsed .finder-note-editor,
+.note-work.is-collapsed .finder-note-resize-handle,
+.note-work.is-collapsed .finder-note-dirty-indicator {
+    display: none;
+}
+
+.finder-note-dirty-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    box-shadow: 0 0 0 1px var(--border-color);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease-out;
+}
+
+.finder-note-editor {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: rgba(255, 255, 255, 0.813);
+    font-family: 'ClashDisplay', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.2;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 0;
+    flex: 1;
+}
+
+.finder-note-editor::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.finder-note-editor {
+    scrollbar-width: none;
+}
+
+.finder-note-editor div,
+.finder-note-editor p {
+    margin: 0;
+}
+
+.finder-note-editor h1,
+.finder-note-editor h2,
+.finder-note-editor h3,
+.finder-note-editor h4,
+.finder-note-editor h5,
+.finder-note-editor h6 {
+    margin: 0.3em 0 0.2em 0;
+    font-size: 1.05em;
+    font-weight: 700;
+}
+
+.finder-note-editor ul,
+.finder-note-editor ol {
+    margin: 0.2em 0;
+    padding-left: 1.2em;
+}
+
+.finder-note-editor pre {
+    margin: 0.3em 0;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: auto;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.finder-note-editor code {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 11px;
+}
+
+.finder-note-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
 }
 
 /* Drag & Drop visual (áreas de drop) */
-.library-grid {
+.grid-library {
     flex: 1; /* Ocupa todo el espacio disponible */
     width: 100%;
     display: flex;
@@ -28,10 +154,12 @@
     border: 2px solid transparent;
 }
 
-.grid-finder {
+.grid-work {
     flex: 1; /* Ocupa todo el espacio disponible */
     width: 100%;
+    height: 100%;
     display: grid;
+    position: relative;
     grid-template-columns: repeat(auto-fill, 130px);
     grid-auto-rows: min-content;
     gap: 15px; /* Separación entre elementos */
@@ -44,15 +172,76 @@
     border: 2px solid transparent;
 }
 
-.grid-finder.drag-over,
-.library-grid.drag-over {
+.grid-resources {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    position: relative;
+    grid-template-columns: repeat(auto-fill, 130px);
+    grid-auto-rows: min-content;
+    gap: 15px;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    align-content: start;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.finder-note-toggle {
+    position: absolute;
+    left: 0;
+    top: auto;
+    bottom: 10%;
+    transform: none;
+    width: 18px;
+    height: 56px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    border-left: none;
+    border-radius: 0 6px 6px 0;
+    cursor: pointer;
+    z-index: 10;
+    user-select: none;
+}
+
+.finder-note-toggle:hover {
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.finder-note-toggle:hover .finder-note-toggle-arrow {
+    color: var(--accent-color);
+}
+
+.finder-note-toggle:active {
+    transform: translateX(1px);
+}
+
+.finder-note-toggle-arrow {
+    color: rgba(255, 255, 255, 0.75);
+    font-family: 'ClashDisplay', sans-serif;
+    font-size: 13px;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.grid-work.drag-over,
+.grid-library.drag-over,
+.grid-resources.drag-over {
     border-color: var(--accent-color, #007aff);
     box-shadow: inset 0 0 0 1px var(--accent-color, #007aff);
 }
 
 /* Modificación para centrar el empty-state */
-.grid-finder.is-empty,
-.library-grid.is-empty {
+.grid-work.is-empty,
+.grid-library.is-empty,
+.grid-resources.is-empty {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: 100%;
@@ -62,18 +251,21 @@
 }
 
 /* Personalización de la barra de desplazamiento */
-.library-grid::-webkit-scrollbar,
-.grid-finder::-webkit-scrollbar {
+.grid-library::-webkit-scrollbar,
+.grid-work::-webkit-scrollbar,
+.grid-resources::-webkit-scrollbar {
     width: 10px; /* Ancho de 10px solicitado */
 }
 
-.library-grid::-webkit-scrollbar-track,
-.grid-finder::-webkit-scrollbar-track {
+.grid-library::-webkit-scrollbar-track,
+.grid-work::-webkit-scrollbar-track,
+.grid-resources::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.library-grid::-webkit-scrollbar-thumb,
-.grid-finder::-webkit-scrollbar-thumb {
+.grid-library::-webkit-scrollbar-thumb,
+.grid-work::-webkit-scrollbar-thumb,
+.grid-resources::-webkit-scrollbar-thumb {
     background-color: transparent; /* Gris medio */
     border: 1px solid var(--border-color);
     border-right: none; /* Quitar el borde del lado derecho solicitado */
@@ -83,8 +275,8 @@
     background-clip: content-box;
 }
 
-.library-grid::-webkit-scrollbar-thumb:hover,
-.grid-finder::-webkit-scrollbar-thumb:hover {
+.grid-library::-webkit-scrollbar-thumb:hover,
+.grid-work::-webkit-scrollbar-thumb:hover {
     background-color: #666;
 }
 
@@ -303,7 +495,6 @@
     font-size: 64px;
     filter: grayscale(1); /* Para que el emoji sea más sutil y no rompa la estética monocromática */
     animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    margin-bottom: 15px;
 }
 
 @keyframes bounceIn {

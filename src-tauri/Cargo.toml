@@ -1,8 +1,8 @@
 [package]
 name = "archi"
-version = "0.1.0"
-description = "ARCHI Application"
-authors = ["you"]
+version = "0.5.0"
+description = "Gestor de archivos personal para trabajos de diseño"
+authors = ["Gino Xiscatti"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -29,3 +29,6 @@ image = "0.25.9"
 base64 = "0.22.1"
 sha2 = "0.10.9"
 drag = { path = "drag-rs" }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-global-shortcut = "2"

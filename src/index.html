@@ -84,26 +84,29 @@
 
 
     <main class="content">
-        <div class="library-module active" id="M-Inicio">
+        <div class="inicio-module active" id="M-Inicio">
             <!-- Inicio Module content placeholder -->
             <div style="padding: 20px; color: white;">Bienvenido a ARCHI</div>
         </div>
-        <div class="library-module" id="M-Recursos">
-            <div class="grid-finder" id="resources-grid"></div>
+        <div class="recursos-module" id="M-Recursos">
+            <div class="grid-resources" id="resources-grid"></div>
             <div class="path-bar">
                 <span class="path-text">/Recursos</span>
                 <span class="item-count-text" id="resources-path-item-count">0 ELEMENTOS</span>
             </div>
         </div>
         <div class="library-module" id="M-Biblioteca">
-               <div class="library-grid" id="library-grid"></div>
-               <div class="grid-finder" id="grid-finder" style="display: none;"></div>
+               <div class="grid-library" id="grid-library"></div>
+               <div class="grid-work-row">
+                   <div class="note-work"></div>
+                   <div class="grid-work" id="grid-work" style="display: none;"></div>
+               </div>
                <div class="path-bar">
                     <span class="path-text">/Carpeta de ejemplo</span>
                     <span class="item-count-text" id="path-item-count">0 ELEMENTOS</span>
                 </div>
            </div>
-        <div class="library-module" id="M-Contaduria">
+        <div class="contaduria-module" id="M-Contaduria">
             <div style="padding: 20px; color: white;">Módulo de Contaduría</div>
         </div>
 
@@ -116,8 +119,8 @@
 
         
         <!-- Módulo de Configuración -->
-        <div class="library-module" id="M-Settings">
-            <div class="settings-container">
+        <div class="settings-module" id="M-Settings">
+                <div class="settings-container">
                 <div class="settings-menu-grid">
                     <div class="settings-menu-item active" data-section="tema">
                         <span class="material-symbols-rounded">palette</span>
@@ -130,6 +133,10 @@
                     <div class="settings-menu-item" data-section="cache">
                         <span class="material-symbols-rounded">cached</span>
                         <span class="menu-text">Caché</span>
+                    </div>
+                    <div class="settings-menu-footer">
+                        <div class="settings-menu-footer-brand">ARCHI™</div>
+                        <div class="settings-menu-footer-text">© 2026 Gino Xiscatti. Todos los derechos reservados.</div>
                     </div>
                 </div>
                 <div class="settings-divider"></div>
@@ -350,6 +357,11 @@
                 <input type="text" id="modal-input" class="modal-input" placeholder="Nombre...">
             </div>
             <div class="modal-footer">
+                <div class="modal-footer-left" style="flex: 1; display: flex; align-items: center;">
+                    <button id="modal-toggle-extension" class="modal-btn-icon" style="display: none; background: transparent; border: none; cursor: pointer; color: #8b949e; padding: 5px; border-radius: 4px; transition: all 0.2s ease;" title="Mostrar/Ocultar extensión">
+                        <span class="material-symbols-rounded" style="font-size: 18px;">extension</span>
+                    </button>
+                </div>
                 <button id="modal-cancel" class="modal-btn btn-secondary">Cancelar</button>
                 <button id="modal-confirm" class="modal-btn btn-primary">Confirmar</button>
             </div>

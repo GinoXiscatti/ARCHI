@@ -25,6 +25,12 @@ window.loader = {
         const btn = document.getElementById('loader-cancel-btn');
         if (btn) {
             btn.style.display = 'block';
+            // Force reflow to ensure transition works if needed, though display none->block doesn't transition well
+            // We set opacity and visibility for redundancy
+            requestAnimationFrame(() => {
+                btn.style.opacity = '1';
+                btn.style.visibility = 'visible';
+            });
             btn.disabled = false;
             btn.onclick = onClick;
         }
@@ -33,6 +39,8 @@ window.loader = {
     hideCancelButton() {
         const btn = document.getElementById('loader-cancel-btn');
         if (btn) {
+            btn.style.opacity = '0';
+            btn.style.visibility = 'hidden';
             btn.style.display = 'none';
             btn.disabled = false;
             btn.onclick = null;
@@ -110,6 +118,8 @@ window.loader = {
                 radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0%, #000000 100%),
                 #000000
             `;
+            
+            this.hideCancelButton();
         }
     }
 };
@@ -117,4 +127,11 @@ window.loader = {
 // Inicializar estilos del loader al cargar recursos básicos
 window.addEventListener('DOMContentLoaded', () => {
     window.loader.init();
+
+    // Show window after a brief delay to ensure styles are applied (avoids white flash)
+    if (window.__TAURI__ && window.__TAURI__.core) {
+        setTimeout(() => {
+            window.__TAURI__.core.invoke('show_main_window').catch(e => console.error('Error showing window:', e));
+        }, 100);
+    }
 });

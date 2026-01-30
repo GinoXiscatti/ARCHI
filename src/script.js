@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const settingsIcon = document.querySelector('.settings-icon');
     const settingsTab = document.getElementById('lateral-tab-settings');
     const topTabs = document.querySelectorAll('.top-tab');
-    const modules = document.querySelectorAll('.library-module');
+    const modules = document.querySelectorAll('.content > div[id^="M-"]');
     
     const realTabs = Array.from(tabs).filter(t => t !== settingsTab);
 
@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let lastActiveTopTab = null;
     let dropCopyMode = false;
     let isAltPressed = false;
+
+    const isTextEditingElement = (el) => {
+        if (!el) return false;
+        const tag = el.tagName;
+        if (tag && ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return true;
+        if (el.isContentEditable) return true;
+        return !!el.closest?.('[contenteditable="true"]');
+    };
 
     // ==========================================================================
     // UTILS & SHARED LOGIC
@@ -50,6 +58,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const folder = decodeURIComponent(rawFolder);
                     const files = await invoke('list_files', { folder });
                     return { status: 'success', files };
+                }
+
+                if (url.startsWith('/api/work_note/')) {
+                    const rawFolder = url.replace('/api/work_note/', '');
+                    const folder = decodeURIComponent(rawFolder);
+
+                    if (method === 'GET') {
+                        const content = await invoke('read_work_note', { folder });
+                        return { status: 'success', content };
+                    }
+                    if (method === 'POST') {
+                        await invoke('save_work_note', { folder, content: body?.content ?? '' });
+                        return { status: 'success' };
+                    }
                 }
 
                 // --- CLIENTES (CRUD) ---
@@ -196,37 +218,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                  const aseExts = ['ase'];
                  
                  if (imageExts.includes(ext)) {
-                     const fileSrc = this.convertFileSrc(file.path);
-                     iconHtml = `<img src="${fileSrc}" class="file-thumbnail-img">`;
+                     // Use placeholder for images to enable caching via enrichThumbnail
+                     iconHtml = `<img src="assets/LogotipoARCHI.svg" class="file-thumbnail-img adobe-thumb thumb-fit-contain thumb-opacity-low">`;
                  } else if (videoExts.includes(ext)) {
                      const fileSrc = this.convertFileSrc(file.path);
                      iconHtml = `<video src="${fileSrc}" class="file-thumbnail-video" muted preload="metadata"></video>`;
                  } else if (textPreviewExts.includes(ext)) {
-                     iconHtml = `
-                     <div class="file-thumbnail-text-preview" style="
-                        width: 100%; 
-                        height: 100%; 
-                        padding: 6px; 
-                        box-sizing: border-box; 
-                        overflow: hidden; 
-                        background-color: white; 
-                        font-family: monospace; 
-                        font-size: 5px; 
-                        line-height: 1.2; 
-                        color: #555; 
-                        text-align: left; 
-                        white-space: pre-wrap;
-                        border: 1px solid #eee;
-                     "></div>`;
+                     iconHtml = `<div class="file-thumbnail-text-preview"></div>`;
                  } else if (documentExts.includes(ext)) {
                      const iconName = `${ext.toUpperCase()}-Icon.svg`;
                      iconHtml = `<img src="assets/${iconName}" class="file-thumbnail-img adobe-thumb" style="padding: 15px; object-fit: contain;" onerror="this.src='assets/LogotipoARCHI.svg'">`;
                  } else if (nativeThumbExts.includes(ext)) {
-                     iconHtml = `<img src="assets/LogotipoARCHI.svg" class="file-thumbnail-img adobe-thumb" style="padding: 25px; margin: 5px; opacity: 0.1; object-fit: contain;">`;
+                     iconHtml = `<img src="assets/LogotipoARCHI.svg" class="file-thumbnail-img adobe-thumb thumb-fit-contain thumb-opacity-low">`;
                  } else if (zipExts.includes(ext)) {
                      iconHtml = `<img src="assets/zip-icon.webp" class="file-thumbnail-img" style="object-fit: contain; padding: 10px;">`;
                  } else if (aseExts.includes(ext)) {
-                    iconHtml = `<img src="assets/ase-icon.svg" class="file-thumbnail-img" style="object-fit: contain; padding: 0;">`;
+                    iconHtml = `<img src="assets/ase-icon.svg" class="file-thumbnail-img thumb-fit-contain">`;
                 } else {
                      iconHtml = `
                      <div class="file-icon-svg" style="display:flex;align-items:center;justify-content:center; width:100%; height:100%;">
@@ -249,6 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const textPreviewExts = ['txt', 'rtf', 'md', 'json', 'xml', 'log', 'ini', 'cfg', 'csv'];
             const nativeThumbExts = ['psd', 'psb', 'ai', 'indd', 'pdf', 'eps', 'tiff', 'tif', 'raw', 'dng', 'cdr', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
+            const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
     
             if (textPreviewExts.includes(ext)) {
                  if (window.__TAURI__ && window.__TAURI__.core) {
@@ -259,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 if (ext === 'csv') {
                                     // Renderizar CSV como tabla simple
                                     const rows = response.content.split(/\r?\n/).filter(r => r.trim() !== '').slice(0, 20);
-                                    let tableHtml = '<table style="width:100%; border-collapse: collapse; table-layout: fixed;">';
+                                    let tableHtml = '<table class="file-thumbnail-csv-table">';
                                     
                                     rows.forEach((row, i) => {
                                         // Detectar separador (coma o punto y coma)
@@ -271,15 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                             const val = cell.replace(/^"|"$/g, '').trim();
                                             const bg = i === 0 ? '#f5f5f5' : '#fff';
                                             const fw = i === 0 ? 'bold' : 'normal';
-                                            tableHtml += `<td style="
-                                                border: 1px solid #e0e0e0; 
-                                                padding: 2px; 
-                                                background: ${bg}; 
-                                                font-weight: ${fw};
-                                                overflow: hidden;
-                                                white-space: nowrap;
-                                                font-size: 4px;
-                                            ">${val}</td>`;
+                                            tableHtml += `<td class="file-thumbnail-csv-cell" style="background: ${bg}; font-weight: ${fw};">${val}</td>`;
                                         });
                                         tableHtml += '</tr>';
                                     });
@@ -299,13 +299,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                             if (previewDiv) previewDiv.textContent = file.name;
                         });
                  }
-            } else if (nativeThumbExts.includes(ext)) {
+            } else if (nativeThumbExts.includes(ext) || imageExts.includes(ext)) {
                  if (window.__TAURI__ && window.__TAURI__.core) {
                      window.__TAURI__.core.invoke('generate_thumbnail', { path: file.path })
                         .then(base64 => {
                             const img = containerElement.querySelector('.adobe-thumb');
                             if (img) {
                                 img.src = base64;
+                                // Remove utility classes to allow full-size thumbnail display
+                                img.classList.remove('thumb-fit-contain', 'thumb-opacity-low');
                                 img.style.padding = '0';
                                 img.style.margin = '0';
                                 img.style.opacity = '1';
@@ -314,6 +316,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                         })
                         .catch(e => {
                             console.warn('No thumbnail for', file.name);
+                            // Fallback: If it's a standard image, try loading it directly
+                            if (imageExts.includes(ext)) {
+                                const img = containerElement.querySelector('.adobe-thumb');
+                                if (img) {
+                                    img.src = this.convertFileSrc(file.path);
+                                    img.classList.remove('thumb-fit-contain', 'thumb-opacity-low');
+                                    img.style.opacity = '1';
+                                    img.style.objectFit = 'cover';
+                                }
+                            }
                         });
                  }
             }
@@ -521,8 +533,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let folder = null;
 
                         if (bibliotecaModule && bibliotecaModule.classList.contains('active')) {
-                            const libraryGrid = document.getElementById('library-grid');
-                            const gridFinder = document.getElementById('grid-finder');
+                            const libraryGrid = document.getElementById('grid-library');
+                            const gridFinder = document.getElementById('grid-work');
                             const activeGrid = (libraryGrid && libraryGrid.style.display !== 'none')
                                 ? libraryGrid
                                 : gridFinder;
@@ -731,6 +743,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Atajo de teclado para recargar la ventana (Cmd+R / Ctrl+R)
     document.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+            if (isTextEditingElement(document.activeElement) || isTextEditingElement(e.target)) return;
             e.preventDefault();
             window.location.reload();
         }
@@ -768,27 +781,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.addEventListener('resize', updateFades);
     }
 
-    // Lógica para guardar la resolución al redimensionar (con debounce)
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(async () => {
-            if (window.__TAURI__) {
-                // Usar tamaño lógico (CSS pixels) para consistencia
-                const width = window.outerWidth || window.innerWidth;
-                const height = window.outerHeight || window.innerHeight;
-
+            if (window.__TAURI__ && window.__TAURI__.window && window.utils && typeof window.utils.apiCall === 'function') {
                 try {
-                    // Guardar nueva resolución
+                    const { getCurrentWindow } = window.__TAURI__.window;
+                    const appWindow = getCurrentWindow();
+
+                    const maximized = await appWindow.isMaximized();
+                    if (maximized) return;
+
+                    const size = await appWindow.innerSize();
+                    const factor = await appWindow.scaleFactor();
+
+                    if (!size || typeof size.width !== 'number' || typeof size.height !== 'number' || typeof factor !== 'number' || factor <= 0) {
+                        return;
+                    }
+
+                    const logical = size.toLogical(factor);
+                    const width = Math.round(logical.width);
+                    const height = Math.round(logical.height);
+
                     await window.utils.apiCall('/api/save_config', {
                         resolution: { width, height }
                     }, 'POST');
-                    console.log('Resolución lógica guardada:', width, height);
                 } catch (e) {
                     console.error('Error guardando resolución:', e);
                 }
             }
-        }, 1000); // Esperar 1 segundo tras el último cambio
+        }, 1000);
     });
 
     // ==========================================================================
@@ -800,25 +823,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     const modalInput = document.getElementById('modal-input');
     const modalConfirm = document.getElementById('modal-confirm');
     const modalCancel = document.getElementById('modal-cancel');
+    const modalToggleExtension = document.getElementById('modal-toggle-extension');
 
     let currentModalAction = null;
     let existingItems = [];
 
     window.showModal = function(options) {
-        const { title, placeholder, confirmText, action, initialValue, message, showInput = true, validationValue = null, validationItems = null } = options;
+        const { title, placeholder, confirmText, action, initialValue, message, showInput = true, validationValue = null, validationItems = null, showExtensionToggle = false, originalExtension = '' } = options;
         
-        // Si se pasan items específicos para validar, usarlos. Si no, obtenerlos del grid.
+        // Si se pasan items específicos para validar, usarlos. Si no, obtenerlos del grid visible actual.
         if (validationItems && Array.isArray(validationItems)) {
             existingItems = validationItems.map(item => item.toLowerCase());
         } else {
             const gridItems = document.querySelectorAll('.file-item .file-name');
-            existingItems = Array.from(gridItems).map(item => item.textContent.trim().toLowerCase());
+            existingItems = Array.from(gridItems)
+                .filter(item => item.offsetParent !== null)
+                .map(item => item.textContent.trim().toLowerCase());
         }
 
         modalTitle.textContent = title || 'Confirmar';
         
         // Guardar valor de validación si existe
         modalInput.dataset.validation = validationValue || '';
+        
+        // Guardar extensión oculta y nombre inicial completo para validación precisa
+        if (showExtensionToggle && originalExtension) {
+            modalInput.dataset.hiddenExtension = originalExtension;
+            // Si el valor inicial no tiene extensión pero la original existe, la reconstruimos
+            const initVal = initialValue || '';
+            if (!initVal.endsWith(originalExtension)) {
+                 modalInput.dataset.initialFull = initVal + originalExtension;
+            } else {
+                 modalInput.dataset.initialFull = initVal;
+            }
+        } else {
+            modalInput.dataset.hiddenExtension = '';
+            modalInput.dataset.initialFull = initialValue || '';
+        }
+        
         if (validationValue) {
             modalConfirm.disabled = true;
             modalConfirm.style.opacity = '0.5';
@@ -845,6 +887,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             modalInput.classList.remove('is-duplicate');
         } else {
             modalInput.style.display = 'none';
+        }
+        
+        // Manejar Toggle de Extensión
+        if (showExtensionToggle && originalExtension && modalToggleExtension) {
+            modalToggleExtension.style.display = 'flex';
+            
+            // Función interna para manejar el click
+             modalToggleExtension.onclick = (e) => {
+                 e.preventDefault(); // Evitar submit si está dentro de form
+                 const currentVal = modalInput.value;
+                 const isActive = modalToggleExtension.classList.contains('active');
+                 
+                 if (isActive) {
+                     // Ocultar extensión (Desactivar)
+                     // Lógica inteligente: Si el usuario editó la extensión (ej: .pn), 
+                     // queremos limpiar eso y volver al nombre base.
+                     // Si termina con la original, la quitamos.
+                     if (currentVal.toLowerCase().endsWith(originalExtension.toLowerCase())) {
+                         modalInput.value = currentVal.substring(0, currentVal.length - originalExtension.length);
+                     } else {
+                         // Si no coincide (usuario editó), intentamos quitar lo que parece ser la extensión modificada
+                         const lastDotIndex = currentVal.lastIndexOf('.');
+                         if (lastDotIndex > 0) {
+                             // Quitamos desde el último punto
+                             modalInput.value = currentVal.substring(0, lastDotIndex);
+                         }
+                         // Si no hay puntos, no hacemos nada (ya es nombre base)
+                     }
+                     
+                     modalToggleExtension.classList.remove('active');
+                     modalToggleExtension.style.color = '#8b949e';
+                     modalToggleExtension.style.backgroundColor = 'transparent';
+                 } else {
+                     // Mostrar extensión (Activar)
+                     // Si no termina con la extensión original, la agregamos.
+                     // Esto restaura la extensión si se había ocultado, o corrige si faltaba.
+                     if (!currentVal.toLowerCase().endsWith(originalExtension.toLowerCase())) {
+                         modalInput.value = currentVal + originalExtension;
+                     }
+                     modalToggleExtension.classList.add('active');
+                     modalToggleExtension.style.color = 'var(--accent-color)';
+                     modalToggleExtension.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                 }
+                 modalInput.focus();
+                 
+                 // Disparar evento input para re-validar
+                 modalInput.dispatchEvent(new Event('input'));
+             };
+            
+            // Reset visual state inicial
+            modalToggleExtension.classList.remove('active');
+            modalToggleExtension.style.color = '#8b949e';
+            modalToggleExtension.style.backgroundColor = 'transparent';
+            
+        } else if (modalToggleExtension) {
+            modalToggleExtension.style.display = 'none';
+            modalToggleExtension.onclick = null;
         }
 
         modalConfirm.textContent = confirmText || 'Confirmar';
@@ -885,14 +984,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Validación de duplicados y nombre de seguridad en tiempo real
     modalInput.addEventListener('input', () => {
         const value = modalInput.value.trim();
-        const valueLower = value.toLowerCase();
+        let valueToCheck = value.toLowerCase();
         const initialValue = modalInput.dataset.initial?.toLowerCase();
         const validationValue = modalInput.dataset.validation;
         
+        // Si hay una extensión oculta (toggle inactivo), simularla para la validación
+        const toggleBtn = document.getElementById('modal-toggle-extension');
+        const hiddenExtension = modalInput.dataset.hiddenExtension || '';
+        
+        // Si el toggle existe, no está activo y tenemos extensión oculta, la agregamos para validar
+        if (toggleBtn && toggleBtn.style.display !== 'none' && !toggleBtn.classList.contains('active') && hiddenExtension) {
+            if (!valueToCheck.endsWith(hiddenExtension.toLowerCase())) {
+                valueToCheck += hiddenExtension.toLowerCase();
+            }
+        }
+        
         // 1. Validación de Duplicados
         let isDuplicate = false;
-        if (valueLower && existingItems.includes(valueLower)) {
-            if (valueLower !== initialValue) {
+        if (valueToCheck && existingItems.includes(valueToCheck)) {
+             // Recuperamos el valor inicial COMPLETO (con extensión) para comparar
+             const initialFull = modalInput.dataset.initialFull?.toLowerCase() || initialValue;
+             
+             if (valueToCheck !== initialFull) {
                 isDuplicate = true;
             }
         }
@@ -983,8 +1096,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (window.__TAURI__ && window.__TAURI__.event && typeof window.__TAURI__.event.listen === 'function') {
         const getGrids = () => {
-            const libraryGrid = document.getElementById('library-grid');
-            const gridFinder = document.getElementById('grid-finder');
+            const libraryGrid = document.getElementById('grid-library');
+            const gridFinder = document.getElementById('grid-work');
             const resourcesGrid = document.getElementById('resources-grid');
             return { libraryGrid, gridFinder, resourcesGrid };
         };
@@ -1108,6 +1221,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.__TAURI__.event.listen('tauri://drag-drop', handleExternalDrop);
         window.__TAURI__.event.listen('tauri://file-drop', handleExternalDrop);
 
+        // Listener para cambiar de módulo desde el menú nativo
+        window.__TAURI__.event.listen('switch-module', (event) => {
+            const moduleId = event.payload;
+            console.log('Switching to module via menu:', moduleId);
+            const tab = document.querySelector(`.top-tab[data-module="${moduleId}"]`);
+            if (tab) {
+                tab.click();
+            }
+        });
+
+        // Listener para crear cliente (Cmd+Shift+N)
+        window.__TAURI__.event.listen('trigger-create-client', () => {
+            console.log('Trigger create client shortcut');
+            if (isTextEditingElement(document.activeElement)) return;
+            if (window.contextMenuSystem) {
+                window.contextMenuSystem.handleCreateClient();
+            }
+        });
+
+        // Listener para crear carpeta/recurso (Cmd+N)
+        window.__TAURI__.event.listen('trigger-create-folder', () => {
+            console.log('Trigger create folder shortcut');
+            if (isTextEditingElement(document.activeElement)) return;
+            if (!window.contextMenuSystem) return;
+
+            // Determinar contexto activo
+            const activeTopTab = document.querySelector('.top-tab.active');
+            if (!activeTopTab) return;
+            const moduleId = activeTopTab.getAttribute('data-module');
+
+            if (moduleId === 'M-Biblioteca') {
+                // Biblioteca Logic
+                const libraryGrid = document.getElementById('grid-library');
+                const gridFinder = document.getElementById('grid-work');
+                // Determinar cual grid está visible
+                const isFinderVisible = gridFinder && gridFinder.style.display !== 'none';
+                const activeGrid = isFinderVisible ? gridFinder : libraryGrid;
+                
+                const currentFolder = activeGrid?.getAttribute('data-current-folder');
+                
+                // Si estamos en raíz (biblioteca) -> create work, si estamos en subcarpeta -> create folder
+                // Reutilizamos handleCreateWork que ya maneja la lógica de API
+                // isResources = false, isGridFinder = isFinderVisible
+                window.contextMenuSystem.handleCreateWork(currentFolder, false, isFinderVisible);
+
+            } else if (moduleId === 'M-Recursos') {
+                // Recursos Logic
+                const resourcesGrid = document.getElementById('resources-grid');
+                const currentFolder = resourcesGrid?.getAttribute('data-current-folder');
+                
+                // isResources = true
+                window.contextMenuSystem.handleCreateWork(currentFolder, true, false);
+            }
+        });
+
         const forceMoveCursor = (e) => {
             e.preventDefault();
             if (!e.dataTransfer) return;
@@ -1120,11 +1288,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     window.addEventListener('keydown', (e) => {
+        const isEditing = isTextEditingElement(document.activeElement) || isTextEditingElement(e.target);
+
         if (e.key === 'Alt' || e.key === 'AltGraph' || e.key === 'Option') {
             isAltPressed = true;
         }
 
         if (e.metaKey && e.key === ',') {
+            if (isEditing) return;
             e.preventDefault();
             const settingsIcon = document.querySelector('.settings-icon');
             if (settingsIcon) settingsIcon.click();
@@ -1132,7 +1303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Atajos para cambiar entre módulos (1, 2, 3, 4)
-        if (!['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        if (!isEditing) {
             const shortcuts = {
                 '1': 'M-Inicio',
                 '2': 'M-Recursos',
@@ -1157,6 +1328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 closeModal();
                 return;
             }
+            if (isEditing) return;
             
             // 2. Si el módulo de configuración está activo, cerrarlo
             const settingsModule = document.getElementById('M-Settings');

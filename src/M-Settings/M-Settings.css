@@ -27,7 +27,7 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 20px;
+    padding: 0;
     box-sizing: border-box;
     gap: 10px;
 }
@@ -41,6 +41,24 @@
     box-sizing: border-box;
     flex-shrink: 0;
     gap: 10px;
+}
+
+.settings-menu-footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    color: #8b949e;
+    font-size: 11px;
+}
+
+.settings-menu-footer-brand {
+    font-weight: 600;
+}
+
+.settings-menu-footer-text {
+    font-weight: 400;
 }
 
 .settings-menu-item {
@@ -94,7 +112,7 @@
     display: flex;
     flex-direction: column;
     gap: 25px;
-    padding: 0;
+    padding: 20px;
     overflow-y: auto; /* El scroll se queda en el grid de contenido */
     scrollbar-gutter: stable;
     box-sizing: border-box;
@@ -261,6 +279,18 @@
     transform: translateY(10px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     align-items: stretch;
+    display: none; /* Asegura que no ocupe espacio ni genere gap */
+    margin: 0;
+    padding: 0;
+    width: auto !important;
+}
+
+.cache-info-box.active {
+    display: flex; /* Necesario para activar el layout cuando es visible */
+    opacity: 1;
+    transform: translateY(0);
+    margin: 0 20px 20px 20px;
+    padding: 20px;
 }
 
 .cache-info-header {
@@ -294,11 +324,6 @@
 .cache-info-note {
     /* Hereda estilos de .settings-description */
     opacity: 0.5;
-}
-
-.cache-info-box.active {
-    opacity: 1;
-    transform: translateY(0);
 }
 
 .cache-info-icon-column {

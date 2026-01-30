@@ -6,8 +6,8 @@
 class ContextMenuSystem {
     constructor() {
         this.menu = document.getElementById('global-context-menu');
-        this.libraryGrid = document.getElementById('library-grid');
-        this.gridFinder = document.getElementById('grid-finder');
+        this.libraryGrid = document.getElementById('grid-library');
+        this.gridFinder = document.getElementById('grid-work');
         this.resourcesGrid = document.getElementById('resources-grid');
         this.lateralBar = document.querySelector('.lateral-bar');
         this.settingsModule = document.getElementById('M-Settings');
@@ -21,6 +21,9 @@ class ContextMenuSystem {
         }
 
         this.init();
+        
+        // Expose instance to window for global access
+        window.contextMenuSystem = this;
     }
 
     init() {
@@ -288,14 +291,50 @@ class ContextMenuSystem {
     handleRename(parentFolder, isResources = false, isGridFinder = false) {
         if (!parentFolder || !this.currentTarget || !window.showModal) return;
         const oldName = this.currentTarget.getAttribute('data-name');
+        const isDir = this.currentTarget.getAttribute('data-is-dir') === 'true';
+        
+        // Lógica para separar extensión
+        let nameToEdit = oldName;
+        let extension = '';
+        
+        // Solo separamos extensión si NO es directorio y tiene un punto que no sea el primero
+        if (!isDir) {
+            const lastDotIndex = oldName.lastIndexOf('.');
+            if (lastDotIndex > 0) {
+                nameToEdit = oldName.substring(0, lastDotIndex);
+                extension = oldName.substring(lastDotIndex);
+            }
+        }
+
         window.showModal({
             title: isResources ? 'Renombrar Recurso' : (isGridFinder ? 'Renombrar Carpeta' : 'Renombrar Trabajo'),
-            initialValue: oldName,
+            initialValue: nameToEdit,
             confirmText: 'Confirmar',
-            action: async (newName) => {
-                if (newName.trim() === oldName) return;
+            showExtensionToggle: !isDir && !!extension, // Solo mostrar toggle si es archivo y tiene extensión
+            originalExtension: extension,
+            action: async (newNameBase) => {
+                let finalNewName = newNameBase.trim();
+                
+                // Reconstruir nombre con extensión si existía
+                if (extension && !isDir) {
+                     const toggleBtn = document.getElementById('modal-toggle-extension');
+                     // Si el botón existe y está activo, el usuario tiene control total (puede cambiar ext)
+                     const isToggleActive = toggleBtn && toggleBtn.classList.contains('active');
+                     
+                     if (!isToggleActive) {
+                         // Modo "Extensión Oculta": El usuario editó solo el nombre.
+                         // Forzamos la extensión original al final.
+                         if (!finalNewName.toLowerCase().endsWith(extension.toLowerCase())) {
+                             finalNewName += extension;
+                         }
+                     }
+                     // Si isToggleActive es true, finalNewName ya contiene lo que el usuario quiere (con o sin ext modificada)
+                }
+                
+                if (finalNewName === oldName) return;
+
                 const endpoint = isResources ? '/api/rename_resource' : '/api/rename_folder';
-                const result = await window.utils.apiCall(endpoint, { parent: parentFolder, old_name: oldName, new_name: newName.trim() });
+                const result = await window.utils.apiCall(endpoint, { parent: parentFolder, old_name: oldName, new_name: finalNewName });
                 if (result.status === 'success') this.refreshGrid(isResources, isGridFinder);
                 else window.utils.showError('Error al renombrar', result.error);
             }

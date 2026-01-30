@@ -4,15 +4,15 @@ use std::os::unix::fs::symlink;
 use std::path::Path;
 use std::process::Command;
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use base64::{engine::general_purpose, Engine as _};
 use image::ImageFormat;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{Emitter, State};
 use walkdir::WalkDir;
 
-use crate::paths::{get_cache_dir, get_user_data_dir, get_cached_path};
+use crate::paths::{get_cache_dir, get_cached_path, get_user_data_dir};
 
 // ==========================================
 // STATE
@@ -27,8 +27,8 @@ pub struct CacheCancellation {
 // ==========================================
 
 const VALID_EXTENSIONS: &[&str] = &[
-    "jpg", "jpeg", "png", "webp", "bmp", "psd", "psb", "ai", "indd", "pdf", "eps", "tiff",
-    "tif", "raw", "dng", "cdr", "doc", "docx", "xls", "xlsx", "ppt", "pptx",
+    "jpg", "jpeg", "png", "webp", "bmp", "psd", "psb", "ai", "indd", "pdf", "eps", "tiff", "tif",
+    "raw", "dng", "cdr", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "gif", "svg", "ico",
 ];
 
 // ==========================================
@@ -36,8 +36,8 @@ const VALID_EXTENSIONS: &[&str] = &[
 // ==========================================
 
 fn convert_to_webp(data: &[u8]) -> Result<Vec<u8>, String> {
-    let img = image::load_from_memory(data)
-        .map_err(|e| format!("Error decodificando imagen: {}", e))?;
+    let img =
+        image::load_from_memory(data).map_err(|e| format!("Error decodificando imagen: {}", e))?;
     let mut buf = Vec::new();
     img.write_to(&mut Cursor::new(&mut buf), ImageFormat::WebP)
         .map_err(|e| format!("Error codificando a WebP: {}", e))?;
@@ -59,8 +59,6 @@ fn calculate_hash(path: &Path) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-
-
 fn save_and_return_webp(data: &[u8], cache_path: &Path) -> Result<String, String> {
     let webp_data = convert_to_webp(data)?;
     let _ = fs::write(cache_path, &webp_data);
@@ -71,12 +69,10 @@ fn save_and_return_webp(data: &[u8], cache_path: &Path) -> Result<String, String
 fn get_candidates() -> Vec<std::path::PathBuf> {
     let user_data_dir = get_user_data_dir();
     let mut candidates = Vec::new();
-    let walker = WalkDir::new(&user_data_dir)
-        .into_iter()
-        .filter_entry(|e| {
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.') && name != "node_modules"
-        });
+    let walker = WalkDir::new(&user_data_dir).into_iter().filter_entry(|e| {
+        let name = e.file_name().to_string_lossy();
+        !name.starts_with('.') && name != "node_modules"
+    });
 
     for entry in walker.flatten() {
         let path = entry.path();
@@ -135,8 +131,6 @@ pub fn cache_cleanup() {
 // COMMANDS
 // ==========================================
 
-
-
 #[derive(Serialize)]
 pub struct CacheStats {
     pub file_count: usize,
@@ -163,7 +157,7 @@ pub async fn get_cache_stats() -> Result<CacheStats, String> {
                     }
                 } else if path.is_dir() {
                     // Contar recursivamente si hay subdirectorios (aunque el cache suele ser plano)
-                     for sub in WalkDir::new(&path).into_iter().flatten() {
+                    for sub in WalkDir::new(&path).into_iter().flatten() {
                         let p = sub.path();
                         if p.is_file() {
                             file_count += 1;
@@ -180,7 +174,7 @@ pub async fn get_cache_stats() -> Result<CacheStats, String> {
     // Calcular archivos faltantes
     let candidates = get_candidates();
     let mut missing_count = 0;
-    
+
     // Optimización: podríamos paralelizar esto si fuera muy lento, pero por ahora iteramos
     for path in candidates {
         let hash = calculate_hash(&path);
@@ -196,7 +190,6 @@ pub async fn get_cache_stats() -> Result<CacheStats, String> {
         missing_count,
     })
 }
-
 
 #[tauri::command]
 pub async fn open_cache_folder() -> Result<(), String> {
@@ -228,18 +221,18 @@ pub async fn open_cache_folder() -> Result<(), String> {
 #[tauri::command]
 pub async fn clear_all_cache() -> Result<(), String> {
     let cache_dir = get_cache_dir();
-    
+
     if !cache_dir.exists() {
         return Ok(()); // No hay nada que borrar
     }
-    
+
     // Leer todos los archivos y carpetas en el directorio de cache
     let entries = fs::read_dir(&cache_dir).map_err(|e| e.to_string())?;
-    
+
     for entry in entries {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
-        
+
         if path.is_file() {
             // Borrar archivo
             fs::remove_file(&path).map_err(|e| e.to_string())?;
@@ -248,7 +241,7 @@ pub async fn clear_all_cache() -> Result<(), String> {
             fs::remove_dir_all(&path).map_err(|e| e.to_string())?;
         }
     }
-    
+
     Ok(())
 }
 
@@ -266,7 +259,10 @@ pub fn cancel_cache_generation(state: State<CacheCancellation>) -> Result<(), St
 }
 
 #[tauri::command]
-pub async fn generate_missing_thumbnails(window: tauri::WebviewWindow, state: State<'_, CacheCancellation>) -> Result<String, String> {
+pub async fn generate_missing_thumbnails(
+    window: tauri::WebviewWindow,
+    state: State<'_, CacheCancellation>,
+) -> Result<String, String> {
     let cache_dir = get_cache_dir();
 
     // Resetear estado de cancelación
@@ -281,33 +277,45 @@ pub async fn generate_missing_thumbnails(window: tauri::WebviewWindow, state: St
 
     let total = candidates.len();
     let mut generated_count = 0;
-    
+
     // Notificar inicio
-    let _ = window.emit("cache-progress", CacheProgress {
-        current: 0,
-        total,
-        status: "Iniciando escaneo...".to_string(),
-    });
+    let _ = window.emit(
+        "cache-progress",
+        CacheProgress {
+            current: 0,
+            total,
+            status: "Iniciando escaneo...".to_string(),
+        },
+    );
 
     for (i, path) in candidates.iter().enumerate() {
         if state.canceled.load(Ordering::Relaxed) {
-            let _ = window.emit("cache-progress", CacheProgress {
-                current: i,
-                total,
-                status: "Cancelado".to_string(),
-            });
-            return Ok(format!("Generación cancelada. Se generaron {} miniaturas.", generated_count));
+            let _ = window.emit(
+                "cache-progress",
+                CacheProgress {
+                    current: i,
+                    total,
+                    status: "Cancelado".to_string(),
+                },
+            );
+            return Ok(format!(
+                "Generación cancelada. Se generaron {} miniaturas.",
+                generated_count
+            ));
         }
 
         let hash = calculate_hash(path);
         let cache_path = get_cached_path(&hash);
 
         // Notificar progreso actual
-        let _ = window.emit("cache-progress", CacheProgress {
-            current: i + 1,
-            total,
-            status: "Generando caché...".to_string(),
-        });
+        let _ = window.emit(
+            "cache-progress",
+            CacheProgress {
+                current: i + 1,
+                total,
+                status: "Generando caché...".to_string(),
+            },
+        );
 
         if !cache_path.exists() {
             if generate_thumbnail(path.to_string_lossy().to_string())
@@ -318,15 +326,21 @@ pub async fn generate_missing_thumbnails(window: tauri::WebviewWindow, state: St
             }
         }
     }
-    
-    // Notificar finalización
-    let _ = window.emit("cache-progress", CacheProgress {
-        current: total,
-        total,
-        status: "Finalizado".to_string(),
-    });
 
-    Ok(format!("Se generaron {} miniaturas nuevas", generated_count))
+    // Notificar finalización
+    let _ = window.emit(
+        "cache-progress",
+        CacheProgress {
+            current: total,
+            total,
+            status: "Finalizado".to_string(),
+        },
+    );
+
+    Ok(format!(
+        "Se generaron {} miniaturas nuevas",
+        generated_count
+    ))
 }
 
 #[tauri::command]
@@ -438,14 +452,21 @@ fn generate_with_qlmanage(file_path: &Path, cache_path: &Path) -> Result<String,
         if let Ok(mut file) = fs::File::open(file_path) {
             let mut buffer = [0u8; 8];
             if file.read_exact(&mut buffer).is_ok() {
-                let ext = if buffer.starts_with(b"8BPS") { Some("psd") }
-                else if buffer.starts_with(b"%PDF") { Some("pdf") }
-                else if buffer.starts_with(b"PK\x03\x04") { Some("zip") }
-                else if buffer.starts_with(b"RIFF") { Some("cdr") }
-                else { None };
+                let ext = if buffer.starts_with(b"8BPS") {
+                    Some("psd")
+                } else if buffer.starts_with(b"%PDF") {
+                    Some("pdf")
+                } else if buffer.starts_with(b"PK\x03\x04") {
+                    Some("zip")
+                } else if buffer.starts_with(b"RIFF") {
+                    Some("cdr")
+                } else {
+                    None
+                };
 
                 if let Some(e) = ext {
-                    let new_name = format!("{}.{}", file_path.file_name().unwrap().to_string_lossy(), e);
+                    let new_name =
+                        format!("{}.{}", file_path.file_name().unwrap().to_string_lossy(), e);
                     let link_path = thumbs_dir.join(&new_name);
                     let _ = fs::remove_file(&link_path);
 
@@ -484,7 +505,7 @@ fn generate_with_qlmanage(file_path: &Path, cache_path: &Path) -> Result<String,
     if thumb_path.exists() {
         let data = fs::read(&thumb_path).map_err(|e| e.to_string())?;
         let _ = fs::remove_file(thumb_path);
-        
+
         return save_and_return_webp(&data, cache_path);
     }
 

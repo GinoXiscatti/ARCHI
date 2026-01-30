@@ -19,6 +19,8 @@ pub struct AppConfig {
     pub current_module: String,
     pub remember_module: bool,
     pub lowercase_path: bool,
+    pub finder_note_width: u32,
+    pub finder_note_open: bool,
     pub resolution: Resolution,
 }
 
@@ -32,6 +34,8 @@ impl Default for AppConfig {
             current_module: "M-Inicio".to_string(),
             remember_module: true,
             lowercase_path: false,
+            finder_note_width: 214,
+            finder_note_open: true,
             resolution: Resolution {
                 width: 1000,
                 height: 600,
@@ -65,7 +69,8 @@ pub struct FileItem {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fecha: Option<i64>,
-    pub date: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<bool>,
 }

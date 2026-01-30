@@ -2,14 +2,13 @@ use crate::models::{Client, FileItem, Metadata};
 use crate::paths::{get_config_path, get_user_data_dir};
 use crate::setup_directories::ensure_user_setup;
 use drag::{self, DragItem, DragMode, Image, Options};
-use tauri::Emitter;
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
+use tauri::Emitter;
 use walkdir::WalkDir;
-
 
 // ==========================================
 // FUNCIONES AUXILIARES
@@ -185,52 +184,59 @@ pub fn start_drag_files(window: tauri::WebviewWindow, paths: Vec<String>) -> Res
 
     let item = DragItem::Files(files);
     const TRANSPARENT_PNG_1X1: &[u8] = &[
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49,
-        0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06,
-        0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44,
-        0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D,
-        0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42,
-        0x60, 0x82,
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,
+        0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F,
+        0x15, 0xC4, 0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00,
+        0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
     ];
     let preview_icon = Image::Raw(TRANSPARENT_PNG_1X1.to_vec());
 
     let opts = Options {
-                skip_animatation_on_cancel_or_failure: true,
-                mode: DragMode::CopyMove,
-            };
+        skip_animatation_on_cancel_or_failure: true,
+        mode: DragMode::CopyMove,
+    };
 
     let window_clone = window.clone();
     // Usamos el clon que creamos al principio
     let paths_clone = paths_for_check;
-    
-    let _ = drag::start_drag(&window, item, preview_icon, move |result, _cursor| {
-        // Solo intentamos detectar cambios si se soltó el archivo (Dropped)
-        // Si se canceló, no hacemos nada (o podríamos emitir evento igual, pero no hace falta recargar)
-        if let drag::DragResult::Dropped = result {
-             let window_thread = window_clone.clone();
-             let paths_thread = paths_clone.clone();
-             
-             std::thread::spawn(move || {
-                // Polling: Verificar si los archivos desaparecen (Move)
-                // Intentamos durante 2 segundos (20 * 100ms)
-                for _ in 0..20 {
-                    let any_missing = paths_thread.iter().any(|p| !std::path::Path::new(p).exists());
-                    if any_missing {
-                        // Si alguno falta, asumimos que se movió.
-                        // Emitimos evento y terminamos.
-                        let _ = window_thread.emit("drag-finished", ());
-                        return;
+
+    let _ = drag::start_drag(
+        &window,
+        item,
+        preview_icon,
+        move |result, _cursor| {
+            // Solo intentamos detectar cambios si se soltó el archivo (Dropped)
+            // Si se canceló, no hacemos nada (o podríamos emitir evento igual, pero no hace falta recargar)
+            if let drag::DragResult::Dropped = result {
+                let window_thread = window_clone.clone();
+                let paths_thread = paths_clone.clone();
+
+                std::thread::spawn(move || {
+                    // Polling: Verificar si los archivos desaparecen (Move)
+                    // Intentamos durante 2 segundos (20 * 100ms)
+                    for _ in 0..20 {
+                        let any_missing = paths_thread
+                            .iter()
+                            .any(|p| !std::path::Path::new(p).exists());
+                        if any_missing {
+                            // Si alguno falta, asumimos que se movió.
+                            // Emitimos evento y terminamos.
+                            let _ = window_thread.emit("drag-finished", ());
+                            return;
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(100));
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(100));
-                }
-                
-                // Si llegamos aquí, los archivos siguen existiendo.
-                // Puede ser una copia (Copy) o un movimiento muy lento.
-                // Emitimos el evento de todas formas para asegurar consistencia.
-                let _ = window_thread.emit("drag-finished", ());
-             });
-        }
-    }, opts);
+
+                    // Si llegamos aquí, los archivos siguen existiendo.
+                    // Puede ser una copia (Copy) o un movimiento muy lento.
+                    // Emitimos el evento de todas formas para asegurar consistencia.
+                    let _ = window_thread.emit("drag-finished", ());
+                });
+            }
+        },
+        opts,
+    );
     Ok(())
 }
 
@@ -244,13 +250,11 @@ pub fn toggle_pin_client(name: String, pin: bool) -> Result<(), String> {
             .and_then(|c| serde_json::from_str::<Metadata>(&c).ok())
             .unwrap_or(Metadata {
                 fecha: None,
-                date: None,
                 pin: None,
             })
     } else {
         Metadata {
             fecha: None,
-            date: None,
             pin: None,
         }
     };
@@ -307,7 +311,7 @@ pub fn list_files(folder: String) -> Result<Vec<FileItem>, String> {
                 if meta_path.exists() {
                     if let Ok(content) = fs::read_to_string(&meta_path) {
                         if let Ok(meta) = serde_json::from_str::<Metadata>(&content) {
-                            if let Some(d) = meta.fecha.or(meta.date) {
+                            if let Some(d) = meta.fecha {
                                 folder_date = d;
                                 has_metadata = true;
                             }
@@ -325,7 +329,10 @@ pub fn list_files(folder: String) -> Result<Vec<FileItem>, String> {
                 if let Ok(sub) = fs::read_dir(&path) {
                     item_count = sub
                         .flatten()
-                        .filter(|e| !e.file_name().to_string_lossy().starts_with('.'))
+                        .filter(|entry| {
+                            let file_name = entry.file_name();
+                            !file_name.to_string_lossy().starts_with('.')
+                        })
                         .count();
                 }
 
@@ -370,6 +377,38 @@ pub fn list_files(folder: String) -> Result<Vec<FileItem>, String> {
 }
 
 #[tauri::command]
+pub fn read_work_note(folder: String) -> Result<String, String> {
+    let folder_path = resolve_path(&folder, "Biblioteca");
+
+    if !folder_path.exists() || !folder_path.is_dir() {
+        return Err("Carpeta no encontrada".to_string());
+    }
+
+    let note_path = folder_path.join(".work-note.md");
+    if !note_path.exists() {
+        fs::write(&note_path, "").map_err(|e| e.to_string())?;
+    }
+
+    fs::read_to_string(&note_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn save_work_note(folder: String, content: String) -> Result<(), String> {
+    let folder_path = resolve_path(&folder, "Biblioteca");
+
+    if !folder_path.exists() || !folder_path.is_dir() {
+        return Err("Carpeta no encontrada".to_string());
+    }
+
+    let note_path = folder_path.join(".work-note.md");
+    if !note_path.exists() {
+        fs::write(&note_path, "").map_err(|e| e.to_string())?;
+    }
+
+    fs::write(note_path, content).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn create_folder(parent: String, name: String) -> Result<(), String> {
     let target_base = resolve_path(&parent, "Biblioteca");
     let target_path = target_base.join(&name);
@@ -380,19 +419,29 @@ pub fn create_folder(parent: String, name: String) -> Result<(), String> {
 
     fs::create_dir_all(&target_path).map_err(|e| e.to_string())?;
 
-    // Crear metadatos con la marca de tiempo actual
-    let meta_path = target_path.join(".metadatos.json");
-    let now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as i64;
-    let meta = Metadata {
-        fecha: Some(now),
-        date: None,
-        pin: None,
-    };
-    let json = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?;
-    fs::write(meta_path, json).map_err(|e| e.to_string())?;
+    // Solo las carpetas de trabajo (raíz de Biblioteca para un cliente)
+    // crean metadatos y nota por defecto. Las subcarpetas son carpetas "simples".
+    let is_work_root = !parent.contains('/');
+    if is_work_root {
+        // Crear metadatos con la marca de tiempo actual
+        let meta_path = target_path.join(".metadatos.json");
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+        let meta = Metadata {
+            fecha: Some(now),
+            pin: None,
+        };
+        let json = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?;
+        fs::write(meta_path, json).map_err(|e| e.to_string())?;
+
+        // Crear archivo de nota de trabajo por defecto
+        let note_path = target_path.join(".work-note.md");
+        if !note_path.exists() {
+            fs::write(&note_path, "").map_err(|e| e.to_string())?;
+        }
+    }
 
     Ok(())
 }
@@ -428,7 +477,11 @@ pub fn delete_folder(parent: String, name: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool) -> Result<(), String> {
+pub fn import_dropped_items(
+    folder: String,
+    paths: Vec<String>,
+    copy_mode: bool,
+) -> Result<(), String> {
     println!("Importing items. Copy mode: {}", copy_mode);
     let dest_dir = resolve_path(&folder, "Biblioteca");
     if !dest_dir.exists() || !dest_dir.is_dir() {
@@ -443,7 +496,9 @@ pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool)
 
         let (stem, ext) = if !is_dir {
             match base_name.rsplit_once('.') {
-                Some((s, e)) if !s.is_empty() && !e.is_empty() => (s.to_string(), Some(e.to_string())),
+                Some((s, e)) if !s.is_empty() && !e.is_empty() => {
+                    (s.to_string(), Some(e.to_string()))
+                }
                 _ => (base_name.to_string(), None),
             }
         } else {
@@ -511,7 +566,10 @@ pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool)
                     }
                 }
                 if let Err(e) = fs::copy(src_path, &dest_path) {
-                    eprintln!("Error copiando archivo {:?} a {:?}: {}", src_path, dest_path, e);
+                    eprintln!(
+                        "Error copiando archivo {:?} a {:?}: {}",
+                        src_path, dest_path, e
+                    );
                     success = false;
                 }
             }
@@ -546,7 +604,7 @@ pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool)
 
         if src.is_dir() {
             let dest = unique_dest_path(&dest_dir, &file_name, true);
-            
+
             let mut moved = false;
             if !copy_mode {
                 match fs::rename(&src, &dest) {
@@ -566,19 +624,22 @@ pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool)
                     if !copy_mode {
                         if let Err(e) = fs::remove_dir_all(&src) {
                             eprintln!("Error borrando carpeta original {:?}: {}", src, e);
-                            last_error = Some(format!("Se copió pero no se pudo borrar la carpeta original: {}", e));
+                            last_error = Some(format!(
+                                "Se copió pero no se pudo borrar la carpeta original: {}",
+                                e
+                            ));
                         }
                     }
                 } else {
-                     last_error = Some(format!("Error al copiar carpeta {:?}", src));
+                    last_error = Some(format!("Error al copiar carpeta {:?}", src));
                 }
             }
         } else {
             let dest = unique_dest_path(&dest_dir, &file_name, false);
-            
+
             let mut moved = false;
             if !copy_mode {
-                 match fs::rename(&src, &dest) {
+                match fs::rename(&src, &dest) {
                     Ok(_) => {
                         copied_any = true;
                         moved = true;
@@ -596,7 +657,10 @@ pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool)
                         if !copy_mode {
                             if let Err(e) = fs::remove_file(&src) {
                                 eprintln!("Error borrando archivo original {:?}: {}", src, e);
-                                last_error = Some(format!("Se copió pero no se pudo borrar el original: {}", e));
+                                last_error = Some(format!(
+                                    "Se copió pero no se pudo borrar el original: {}",
+                                    e
+                                ));
                             }
                         }
                     }
@@ -614,12 +678,17 @@ pub fn import_dropped_items(folder: String, paths: Vec<String>, copy_mode: bool)
     } else if skipped_same_dir && last_error.is_none() {
         Ok(())
     } else {
-        Err(last_error.unwrap_or_else(|| "No se pudieron importar los archivos arrastrados".to_string()))
+        Err(last_error
+            .unwrap_or_else(|| "No se pudieron importar los archivos arrastrados".to_string()))
     }
 }
 
 #[tauri::command]
-pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: bool) -> Result<(), String> {
+pub fn import_dropped_resources(
+    folder: String,
+    paths: Vec<String>,
+    copy_mode: bool,
+) -> Result<(), String> {
     println!("Importing resources. Copy mode: {}", copy_mode);
     let dest_dir = resolve_path(&folder, "Recursos");
     if !dest_dir.exists() || !dest_dir.is_dir() {
@@ -634,7 +703,9 @@ pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: b
 
         let (stem, ext) = if !is_dir {
             match base_name.rsplit_once('.') {
-                Some((s, e)) if !s.is_empty() && !e.is_empty() => (s.to_string(), Some(e.to_string())),
+                Some((s, e)) if !s.is_empty() && !e.is_empty() => {
+                    (s.to_string(), Some(e.to_string()))
+                }
                 _ => (base_name.to_string(), None),
             }
         } else {
@@ -702,7 +773,10 @@ pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: b
                     }
                 }
                 if let Err(e) = fs::copy(src_path, &dest_path) {
-                    eprintln!("Error copiando archivo {:?} a {:?}: {}", src_path, dest_path, e);
+                    eprintln!(
+                        "Error copiando archivo {:?} a {:?}: {}",
+                        src_path, dest_path, e
+                    );
                     success = false;
                 }
             }
@@ -737,7 +811,7 @@ pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: b
 
         if src.is_dir() {
             let dest = unique_dest_path(&dest_dir, &file_name, true);
-            
+
             let mut moved = false;
             if !copy_mode {
                 match fs::rename(&src, &dest) {
@@ -757,19 +831,22 @@ pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: b
                     if !copy_mode {
                         if let Err(e) = fs::remove_dir_all(&src) {
                             eprintln!("Error borrando carpeta original {:?}: {}", src, e);
-                            last_error = Some(format!("Se copió pero no se pudo borrar la carpeta original: {}", e));
+                            last_error = Some(format!(
+                                "Se copió pero no se pudo borrar la carpeta original: {}",
+                                e
+                            ));
                         }
                     }
                 } else {
-                     last_error = Some(format!("Error al copiar carpeta {:?}", src));
+                    last_error = Some(format!("Error al copiar carpeta {:?}", src));
                 }
             }
         } else {
             let dest = unique_dest_path(&dest_dir, &file_name, false);
-            
+
             let mut moved = false;
             if !copy_mode {
-                 match fs::rename(&src, &dest) {
+                match fs::rename(&src, &dest) {
                     Ok(_) => {
                         copied_any = true;
                         moved = true;
@@ -787,7 +864,10 @@ pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: b
                         if !copy_mode {
                             if let Err(e) = fs::remove_file(&src) {
                                 eprintln!("Error borrando archivo original {:?}: {}", src, e);
-                                last_error = Some(format!("Se copió pero no se pudo borrar el original: {}", e));
+                                last_error = Some(format!(
+                                    "Se copió pero no se pudo borrar el original: {}",
+                                    e
+                                ));
                             }
                         }
                     }
@@ -805,7 +885,8 @@ pub fn import_dropped_resources(folder: String, paths: Vec<String>, copy_mode: b
     } else if skipped_same_dir && last_error.is_none() {
         Ok(())
     } else {
-        Err(last_error.unwrap_or_else(|| "No se pudieron importar los archivos arrastrados".to_string()))
+        Err(last_error
+            .unwrap_or_else(|| "No se pudieron importar los archivos arrastrados".to_string()))
     }
 }
 

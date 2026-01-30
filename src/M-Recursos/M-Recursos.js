@@ -101,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         item.className = 'file-item';
         item.setAttribute('data-name', file.name);
         item.setAttribute('data-size', file.size || 0);
+        item.setAttribute('data-is-dir', file.is_dir);
         
         const iconHtml = window.utils.generateThumbnailHtml(file);
         
