@@ -4,7 +4,7 @@ use crate::setup_directories::ensure_user_setup;
 use drag::{self, DragItem, DragMode, Image, Options};
 use std::fs;
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
 use tauri::Emitter;

@@ -74,7 +74,9 @@ pub fn run() {
         .on_menu_event(|app, event| {
             use tauri::Emitter;
             let id = event.id();
-            if id.as_ref() == "module_inicio" {
+            if id.as_ref() == "app_settings" {
+                let _ = app.emit("switch-module", "M-Settings");
+            } else if id.as_ref() == "module_inicio" {
                 let _ = app.emit("switch-module", "M-Inicio");
             } else if id.as_ref() == "module_recursos" {
                 let _ = app.emit("switch-module", "M-Recursos");

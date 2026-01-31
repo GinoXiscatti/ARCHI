@@ -1242,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.__TAURI__.event.listen('switch-module', (event) => {
             const moduleId = event.payload;
             console.log('Switching to module via menu:', moduleId);
-            const tab = document.querySelector(`.top-tab[data-module="${moduleId}"]`);
+            const tab = document.querySelector(`.top-tab[data-module="${moduleId}"], .lateral-tab[data-module="${moduleId}"]`);
             if (tab) {
                 tab.click();
             }

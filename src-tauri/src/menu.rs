@@ -18,11 +18,21 @@ pub fn init<R: Runtime>(app: &App<R>) -> tauri::Result<Menu<R>> {
         app,
         &app_name,
         true,
-        &[&PredefinedMenuItem::about(
-            app,
-            Some("Acerca de ARCHI"),
-            Some(about_metadata),
-        )?],
+        &[
+            &PredefinedMenuItem::about(
+                app,
+                Some("Acerca de ARCHI"),
+                Some(about_metadata),
+            )?,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(
+                app,
+                "app_settings",
+                "Configuración",
+                true,
+                Some("CmdOrCtrl+,"),
+            )?,
+        ],
     )?;
 
     // 2. Edit Menu (Edición)
