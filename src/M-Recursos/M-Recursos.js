@@ -155,18 +155,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Escuchar cuando se activa el módulo de recursos
     document.addEventListener('moduleActivated', (e) => {
-        if (e.detail.moduleId !== 'M-Recursos') return;
-
-        // 1) Refresh explícito desde el menú contextual (mantener comportamiento actual)
-        if (e.detail.path) {
-            loadResources(e.detail.path);
-            return;
-        }
-
         const source = e.detail.source || 'unknown';
 
-        // 2) Cambios de cliente (lateral), carga inicial o reset manual del módulo (click en la misma pestaña superior)
-        if (source === 'lateral' || source === 'init' || source === 'top_reset') {
+        // 1) Cambios de cliente (lateral): Actualizar SIEMPRE
+        // Esto asegura que si el usuario cambia de cliente, todos los módulos se sincronicen
+        // aunque no estén visibles en ese momento.
+        if (source === 'lateral') {
             const activeLateralTab = document.querySelector('.lateral-tab.active');
             if (activeLateralTab) {
                 const folderName = activeLateralTab.querySelector('.tab-text').textContent;
@@ -175,7 +169,26 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 3) Cambio de módulo (top bar, atajo, restore):
+        // Si no es el módulo de recursos y no es un cambio lateral, ignorar
+        if (e.detail.moduleId !== 'M-Recursos') return;
+
+        // 2) Refresh explícito desde el menú contextual (mantener comportamiento actual)
+        if (e.detail.path) {
+            loadResources(e.detail.path);
+            return;
+        }
+
+        // 3) Carga inicial o reset manual del módulo (click en la misma pestaña superior)
+        if (source === 'init' || source === 'top_reset') {
+            const activeLateralTab = document.querySelector('.lateral-tab.active');
+            if (activeLateralTab) {
+                const folderName = activeLateralTab.querySelector('.tab-text').textContent;
+                loadResources(folderName);
+            }
+            return;
+        }
+
+        // 4) Cambio de módulo (top bar, atajo, restore):
         //    si ya hay carpeta cargada, NO tocar nada (persistencia total)
         const currentFolder = resourcesGrid.getAttribute('data-current-folder');
         if (currentFolder) return;

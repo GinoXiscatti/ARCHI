@@ -934,8 +934,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                      }
                      
                      modalToggleExtension.classList.remove('active');
-                     modalToggleExtension.style.color = '#8b949e';
-                     modalToggleExtension.style.backgroundColor = 'transparent';
                  } else {
                      // Mostrar extensión (Activar)
                      // Si no termina con la extensión original, la agregamos.
@@ -944,8 +942,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                          modalInput.value = currentVal + originalExtension;
                      }
                      modalToggleExtension.classList.add('active');
-                     modalToggleExtension.style.color = 'var(--accent-color)';
-                     modalToggleExtension.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
                  }
                  modalInput.focus();
                  
@@ -955,8 +951,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             // Reset visual state inicial
             modalToggleExtension.classList.remove('active');
-            modalToggleExtension.style.color = '#8b949e';
-            modalToggleExtension.style.backgroundColor = 'transparent';
             
         } else if (modalToggleExtension) {
             modalToggleExtension.style.display = 'none';

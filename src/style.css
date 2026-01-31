@@ -608,9 +608,44 @@ body {
 }
 
 .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
+    display: flex !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: 100% !important;
+}
+
+.modal-footer-left {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+}
+
+.modal-btn-icon {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    color: #8b949e !important;
+    padding: 5px !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    -webkit-appearance: none !important;
+}
+
+.modal-btn-icon:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+}
+
+.modal-btn-icon.active {
+    color: var(--accent-color) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .modal-btn {

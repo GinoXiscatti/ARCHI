@@ -1243,19 +1243,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Escuchar cuando se activa el módulo de biblioteca
     document.addEventListener('moduleActivated', (e) => {
-        if (e.detail.moduleId !== 'M-Biblioteca') return;
-
-        // 1) Refresh explícito desde el menú contextual (usa path actual)
-        if (e.detail.path) {
-            loadFiles(e.detail.path, false);
-            return;
-        }
-
         const source = e.detail.source || 'unknown';
 
-        // 2) Cambios de cliente (lateral), carga inicial o reset manual del módulo
-        //    (click de nuevo en la misma pestaña superior)
-        if (source === 'lateral' || source === 'init' || source === 'top_reset') {
+        // 1) Cambios de cliente (lateral): Actualizar SIEMPRE
+        // Esto asegura que si el usuario cambia de cliente, todos los módulos se sincronicen
+        // aunque no estén visibles en ese momento.
+        if (source === 'lateral') {
             const activeLateralTab = document.querySelector('.lateral-tab.active');
             if (activeLateralTab) {
                 const folderName = activeLateralTab.querySelector('.tab-text').textContent;
@@ -1264,7 +1257,27 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 3) Cambio de módulo (top bar, atajo, restore): si ya hay carpeta cargada, no tocar
+        // Si no es el módulo de biblioteca y no es un cambio lateral, ignorar
+        if (e.detail.moduleId !== 'M-Biblioteca') return;
+
+        // 2) Refresh explícito desde el menú contextual (usa path actual)
+        if (e.detail.path) {
+            loadFiles(e.detail.path, false);
+            return;
+        }
+
+        // 3) Carga inicial o reset manual del módulo
+        //    (click de nuevo en la misma pestaña superior)
+        if (source === 'init' || source === 'top_reset') {
+            const activeLateralTab = document.querySelector('.lateral-tab.active');
+            if (activeLateralTab) {
+                const folderName = activeLateralTab.querySelector('.tab-text').textContent;
+                loadFiles(folderName);
+            }
+            return;
+        }
+
+        // 4) Cambio de módulo (top bar, atajo, restore): si ya hay carpeta cargada, no tocar
         const activeGrid = workGrid.style.display !== 'none' ? workGrid : gridFinder;
         const currentFolder = activeGrid.getAttribute('data-current-folder');
         if (currentFolder) return;
