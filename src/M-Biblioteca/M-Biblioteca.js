@@ -24,6 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let finderNoteCollapsed = false;
     let gridFinderToggleButton = null;
     let gridFinderToggleArrow = null;
+    let workDragItem = null;
+    let workDragStartX = 0;
+    let workDragStartY = 0;
+    let workDragOffsetX = 0;
+    let workDragOffsetY = 0;
+    let workDragActive = false;
+    let workDragOriginalCol = 0;
+    let workDragOriginalRow = 0;
 
     function sanitizeHtml(html) {
         const template = document.createElement('template');
@@ -661,9 +669,288 @@ document.addEventListener('DOMContentLoaded', () => {
         resizeHandle.addEventListener('mousedown', onMouseDown);
     }
 
+    function ensureGridWorkAbsoluteLayout(savedLayout = null) {
+        if (!gridFinder) return;
+        if (gridFinder.__archiWorkLayoutInitialized && !savedLayout) return;
+        const items = Array.from(gridFinder.querySelectorAll('.file-item'));
+        if (!items.length) return;
+
+        const containerRect = gridFinder.getBoundingClientRect();
+        
+        // Primero, necesitamos calcular las dimensiones de las celdas si no las tenemos.
+        // Lo hacemos dejando que el navegador posicione los elementos inicialmente en el grid.
+        const positions = items.map((item) => {
+            const rect = item.getBoundingClientRect();
+            const x = rect.left - containerRect.left + gridFinder.scrollLeft;
+            const y = rect.top - containerRect.top + gridFinder.scrollTop;
+            return { item, rect, x, y };
+        });
+
+        let originX = positions[0].x;
+        let originY = positions[0].y;
+        positions.forEach((p) => {
+            if (p.x < originX) originX = p.x;
+            if (p.y < originY) originY = p.y;
+        });
+
+        let cellWidth = positions[0].rect.width;
+        let cellHeight = positions[0].rect.height;
+
+        // Estimar cellWidth y cellHeight basándose en los dos primeros elementos
+        for (let i = 1; i < positions.length; i++) {
+            const p = positions[i];
+            const sameRow = Math.abs(p.y - originY) < positions[0].rect.height * 0.5;
+            if (!sameRow) continue;
+            const step = p.x - originX;
+            if (step > positions[0].rect.width) {
+                cellWidth = step;
+                break;
+            }
+        }
+
+        for (let i = 1; i < positions.length; i++) {
+            const p = positions[i];
+            const sameCol = Math.abs(p.x - originX) < positions[0].rect.width * 0.5 && p.y > originY;
+            if (!sameCol) continue;
+            const step = p.y - originY;
+            if (step > positions[0].rect.height) {
+                cellHeight = step;
+                break;
+            }
+        }
+
+        gridFinder.__archiWorkLayoutInitialized = true;
+        gridFinder.__archiWorkOriginX = originX;
+        gridFinder.__archiWorkOriginY = originY;
+        gridFinder.__archiWorkCellWidth = cellWidth;
+        gridFinder.__archiWorkCellHeight = cellHeight;
+
+        const occupied = new Set();
+        if (savedLayout) {
+            Object.keys(savedLayout).forEach((key) => {
+                const pos = savedLayout[key];
+                const col = Math.round(pos.x);
+                const row = Math.round(pos.y);
+                if (col >= 0 && row >= 0) {
+                    occupied.add(col + ',' + row);
+                }
+            });
+        }
+
+        positions.forEach(({ item, rect, x, y }) => {
+            const id = item.getAttribute('data-id') || item.getAttribute('data-name');
+            item.style.position = 'absolute';
+            item.style.width = rect.width + 'px';
+            item.style.height = rect.height + 'px';
+
+            let col;
+            let row;
+
+            if (savedLayout && savedLayout[id]) {
+                const pos = savedLayout[id];
+                col = Math.round(pos.x);
+                row = Math.round(pos.y);
+            } else {
+                const approxCol = Math.round((x - originX) / cellWidth);
+                const approxRow = Math.round((y - originY) / cellHeight);
+                col = approxCol;
+                row = approxRow;
+                let key = col + ',' + row;
+                let attempts = 0;
+                const maxAttempts = items.length * 4;
+                while (occupied.has(key) && attempts < maxAttempts) {
+                    col++;
+                    if (col > approxCol + items.length) {
+                        col = 0;
+                        row++;
+                    }
+                    key = col + ',' + row;
+                    attempts++;
+                }
+            }
+
+            const finalKey = col + ',' + row;
+            occupied.add(finalKey);
+            item.style.left = originX + col * cellWidth + 'px';
+            item.style.top = originY + row * cellHeight + 'px';
+        });
+    }
+
+    function resetWorkDrag() {
+        if (workDragItem) {
+            workDragItem.style.zIndex = '';
+            workDragItem.style.pointerEvents = '';
+        }
+        workDragItem = null;
+        workDragActive = false;
+        document.removeEventListener('mousemove', handleWorkDragMove);
+        document.removeEventListener('mouseup', handleWorkDragEnd);
+    }
+
+    function updateWorkDragPosition(e) {
+        if (!gridFinder || !workDragItem) return;
+        const containerRect = gridFinder.getBoundingClientRect();
+        const x = e.clientX - containerRect.left + gridFinder.scrollLeft - workDragOffsetX;
+        const y = e.clientY - containerRect.top + gridFinder.scrollTop - workDragOffsetY;
+        workDragItem.style.left = x + 'px';
+        workDragItem.style.top = y + 'px';
+    }
+
+    function handleWorkDragMove(e) {
+        if (!workDragItem) return;
+        const dx = e.clientX - workDragStartX;
+        const dy = e.clientY - workDragStartY;
+        const threshold = 4;
+        if (!workDragActive) {
+            if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) {
+                return;
+            }
+            workDragActive = true;
+            if (workDragItem) {
+                workDragItem.style.zIndex = '1000';
+                workDragItem.style.pointerEvents = 'none';
+            }
+        } else {
+            updateWorkDragPosition(e);
+        }
+    }
+
+    function snapWorkDragToGrid() {
+        if (!gridFinder || !workDragItem) return;
+        const originX = gridFinder.__archiWorkOriginX || 0;
+        const originY = gridFinder.__archiWorkOriginY || 0;
+        const cellWidth = gridFinder.__archiWorkCellWidth || workDragItem.offsetWidth;
+        const cellHeight = gridFinder.__archiWorkCellHeight || workDragItem.offsetHeight;
+        const left = parseFloat(workDragItem.style.left) || 0;
+        const top = parseFloat(workDragItem.style.top) || 0;
+
+        let col = Math.round((left - originX) / cellWidth);
+        let row = Math.round((top - originY) / cellHeight);
+
+        if (col < 0) col = 0;
+        if (row < 0) row = 0;
+
+        const items = Array.from(gridFinder.querySelectorAll('.file-item'));
+        const targetLeft = originX + col * cellWidth;
+        const targetTop = originY + row * cellHeight;
+
+        let occupiedItem = null;
+        for (const item of items) {
+            if (item === workDragItem) continue;
+            const itemLeft = parseFloat(item.style.left || '0');
+            const itemTop = parseFloat(item.style.top || '0');
+            const itemCol = Math.round((itemLeft - originX) / cellWidth);
+            const itemRow = Math.round((itemTop - originY) / cellHeight);
+            if (itemCol === col && itemRow === row) {
+                occupiedItem = item;
+                break;
+            }
+        }
+
+        workDragItem.style.left = targetLeft + 'px';
+        workDragItem.style.top = targetTop + 'px';
+
+        if (occupiedItem) {
+            const originalLeft = originX + workDragOriginalCol * cellWidth;
+            const originalTop = originY + workDragOriginalRow * cellHeight;
+            occupiedItem.style.left = originalLeft + 'px';
+            occupiedItem.style.top = originalTop + 'px';
+        }
+    }
+
+    function collectGridWorkLayout() {
+        if (!gridFinder) return [];
+        const items = Array.from(gridFinder.querySelectorAll('.file-item'));
+        const originX = gridFinder.__archiWorkOriginX || 0;
+        const originY = gridFinder.__archiWorkOriginY || 0;
+        const cellWidth = gridFinder.__archiWorkCellWidth || 1;
+        const cellHeight = gridFinder.__archiWorkCellHeight || 1;
+
+        return items.map((item) => {
+            const id = item.getAttribute('data-id') || item.getAttribute('data-name');
+            if (!id) return null;
+            const left = parseFloat(item.style.left || '0');
+            const top = parseFloat(item.style.top || '0');
+            const col = Math.round((left - originX) / cellWidth);
+            const row = Math.round((top - originY) / cellHeight);
+            return {
+                id,
+                x: col,
+                y: row,
+            };
+        }).filter(Boolean);
+    }
+
+    function persistGridWorkLayout() {
+        if (!gridFinder || !window.utils || typeof window.utils.apiCall !== 'function') return;
+        const bibliotecaModule = document.getElementById('M-Biblioteca');
+        if (!bibliotecaModule || !bibliotecaModule.classList.contains('active')) return;
+        const folder = gridFinder.getAttribute('data-current-folder');
+        if (!folder) return;
+        const positions = collectGridWorkLayout();
+        if (!positions.length) return;
+        window.utils.apiCall('/api/save_work_layout', {
+            folder,
+            positions,
+        }, 'POST');
+    }
+
+    function handleWorkDragEnd() {
+        document.removeEventListener('mousemove', handleWorkDragMove);
+        document.removeEventListener('mouseup', handleWorkDragEnd);
+        if (!gridFinder || !workDragItem) {
+            resetWorkDrag();
+            return;
+        }
+        if (workDragActive) {
+            snapWorkDragToGrid();
+            persistGridWorkLayout();
+        }
+        resetWorkDrag();
+    }
+
+    function handleWorkMouseDown(e) {
+        if (!gridFinder) return;
+        if (e.button !== 0) return;
+        const isReorderMode = e.metaKey;
+        if (!isReorderMode) return;
+        const item = e.target && e.target.closest('.file-item');
+        if (!item || !gridFinder.contains(item)) return;
+        const bibliotecaModule = document.getElementById('M-Biblioteca');
+        if (!bibliotecaModule || !bibliotecaModule.classList.contains('active')) return;
+        const isRootView = workGrid && workGrid.style.display !== 'none';
+        if (isRootView) return;
+        e.preventDefault();
+        e.stopPropagation();
+        ensureGridWorkAbsoluteLayout();
+        workDragItem = item;
+        const rect = workDragItem.getBoundingClientRect();
+        workDragStartX = e.clientX;
+        workDragStartY = e.clientY;
+        workDragOffsetX = e.clientX - rect.left;
+        workDragOffsetY = e.clientY - rect.top;
+        const originX = gridFinder.__archiWorkOriginX || 0;
+        const originY = gridFinder.__archiWorkOriginY || 0;
+        const cellWidth = gridFinder.__archiWorkCellWidth || workDragItem.offsetWidth;
+        const cellHeight = gridFinder.__archiWorkCellHeight || workDragItem.offsetHeight;
+        const initialLeft = parseFloat(workDragItem.style.left || '0');
+        const initialTop = parseFloat(workDragItem.style.top || '0');
+        workDragOriginalCol = Math.round((initialLeft - originX) / cellWidth);
+        workDragOriginalRow = Math.round((initialTop - originY) / cellHeight);
+        workDragActive = false;
+        document.addEventListener('mousemove', handleWorkDragMove);
+        document.addEventListener('mouseup', handleWorkDragEnd);
+    }
+
+    function initGridWorkReorder() {
+        if (!gridFinder) return;
+        gridFinder.addEventListener('mousedown', handleWorkMouseDown, { capture: true });
+    }
+
     initFinderNoteWidth();
     setupFinderNoteResize();
     ensureGridFinderToggle();
+    initGridWorkReorder();
 
     async function loadFiles(folderName, updateHistory = true) {
         if (!workGrid || !gridFinder) return;
@@ -711,6 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeGrid.setAttribute('data-current-folder', folderName);
         activeGrid.innerHTML = '';
         if (activeGrid === gridFinder) {
+            gridFinder.__archiWorkLayoutInitialized = false;
             ensureGridFinderToggle();
         }
         
@@ -783,6 +1071,11 @@ document.addEventListener('DOMContentLoaded', () => {
             renderRootView(data.files, activeGrid, folderName);
         } else {
             renderFinderView(data.files, activeGrid, folderName);
+            // Usar requestAnimationFrame para asegurar que el grid se haya renderizado
+            // y las dimensiones/posiciones iniciales sean correctas.
+            requestAnimationFrame(() => {
+                ensureGridWorkAbsoluteLayout(data.layout);
+            });
         }
         
         // Restaurar posición de scroll si corresponde
@@ -896,6 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         item.setAttribute('data-name', file.name);
         item.setAttribute('data-size', file.size || 0);
         item.setAttribute('data-is-dir', file.is_dir);
+        item.setAttribute('data-id', file.name);
         
         const iconHtml = window.utils.generateThumbnailHtml(file);
         

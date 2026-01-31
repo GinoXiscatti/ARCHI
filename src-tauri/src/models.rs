@@ -22,6 +22,12 @@ pub struct AppConfig {
     pub finder_note_width: u32,
     pub finder_note_open: bool,
     pub resolution: Resolution,
+    #[serde(default = "default_thumbnail_mode")]
+    pub thumbnail_mode: String,
+}
+
+fn default_thumbnail_mode() -> String {
+    "fit".to_string()
 }
 
 impl Default for AppConfig {
@@ -40,6 +46,7 @@ impl Default for AppConfig {
                 width: 1000,
                 height: 600,
             },
+            thumbnail_mode: default_thumbnail_mode(),
         }
     }
 }
@@ -68,9 +75,30 @@ pub struct FileItem {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct FileList {
+    pub files: Vec<FileItem>,
+    pub layout: Option<std::collections::HashMap<String, FileLayout>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileLayout {
+    pub x: f32,
+    pub y: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Metadata {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fecha: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pin: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub layout: Option<std::collections::HashMap<String, FileLayout>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LayoutPosition {
+    pub id: String,
+    pub x: f32,
+    pub y: f32,
 }

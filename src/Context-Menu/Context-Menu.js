@@ -14,6 +14,7 @@ class ContextMenuSystem {
         this.currentTarget = null;
         this.currentContext = null; // 'grid', 'grid-finder', 'resources', 'lateral' or 'settings'
         this.margin = 10;
+        this.isRightMouseDown = false;
 
         if (!this.menu) {
             console.error('Context menu element not found');
@@ -31,6 +32,8 @@ class ContextMenuSystem {
         document.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
         document.addEventListener('click', (e) => this.handleClickOutside(e));
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        document.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        document.addEventListener('mouseup', (e) => this.handleMouseUp(e));
         
         // Menu internal listeners
         this.menu.addEventListener('mousemove', (e) => this.updateGlowEffect(e));
@@ -176,6 +179,26 @@ class ContextMenuSystem {
 
     handleKeyDown(e) {
         if (e.key === 'Escape') {
+            this.hide();
+        }
+    }
+
+    handleMouseDown(e) {
+        if (e.button === 2) {
+            this.isRightMouseDown = true;
+        }
+    }
+
+    handleMouseUp(e) {
+        if (e.button !== 2 || !this.isRightMouseDown) return;
+        this.isRightMouseDown = false;
+
+        if (!this.menu || this.menu.style.display === 'none') return;
+
+        const item = e.target.closest('.context-menu-item');
+        if (item && this.menu.contains(item)) {
+            const action = item.getAttribute('data-action');
+            this.executeAction(action);
             this.hide();
         }
     }

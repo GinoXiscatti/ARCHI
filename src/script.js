@@ -56,8 +56,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (url.startsWith('/api/files/')) {
                     const rawFolder = url.replace('/api/files/', '');
                     const folder = decodeURIComponent(rawFolder);
-                    const files = await invoke('list_files', { folder });
-                    return { status: 'success', files };
+                    const result = await invoke('list_files', { folder });
+                    return { status: 'success', files: result.files, layout: result.layout };
                 }
 
                 if (url.startsWith('/api/work_note/')) {
@@ -162,6 +162,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (url === '/api/start_drag' && method === 'POST') {
                     await invoke('start_drag_files', { paths: body.paths });
+                    return { status: 'success' };
+                }
+
+                if (url === '/api/save_work_layout' && method === 'POST') {
+                    await invoke('save_work_layout', { 
+                        folder: body.folder, 
+                        positions: body.positions 
+                    });
                     return { status: 'success' };
                 }
 
@@ -305,25 +313,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                         .then(base64 => {
                             const img = containerElement.querySelector('.adobe-thumb');
                             if (img) {
+                                const mode = this.thumbnailMode === 'fit' ? 'fit' : 'fill';
                                 img.src = base64;
-                                // Remove utility classes to allow full-size thumbnail display
-                                img.classList.remove('thumb-fit-contain', 'thumb-opacity-low');
+                                img.classList.remove('thumb-opacity-low');
                                 img.style.padding = '0';
                                 img.style.margin = '0';
                                 img.style.opacity = '1';
-                                img.style.objectFit = 'cover';
+                                if (mode === 'fit') {
+                                    img.classList.add('thumb-fit-contain');
+                                } else {
+                                    img.classList.remove('thumb-fit-contain');
+                                }
                             }
                         })
                         .catch(e => {
                             console.warn('No thumbnail for', file.name);
-                            // Fallback: If it's a standard image, try loading it directly
                             if (imageExts.includes(ext)) {
                                 const img = containerElement.querySelector('.adobe-thumb');
                                 if (img) {
+                                    const mode = this.thumbnailMode === 'fit' ? 'fit' : 'fill';
                                     img.src = this.convertFileSrc(file.path);
-                                    img.classList.remove('thumb-fit-contain', 'thumb-opacity-low');
+                                    img.classList.remove('thumb-opacity-low');
                                     img.style.opacity = '1';
-                                    img.style.objectFit = 'cover';
+                                    if (mode === 'fit') {
+                                        img.classList.add('thumb-fit-contain');
+                                    } else {
+                                        img.classList.remove('thumb-fit-contain');
+                                    }
                                 }
                             }
                         });
@@ -493,21 +509,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             applyConfig(config) {
                 if (!config) return;
                 
-                // Aplicar Colores
                 const root = document.documentElement;
                 if (config.primary_color) root.style.setProperty('--primary-color', config.primary_color);
                 if (config.accent_color) root.style.setProperty('--accent-color', config.accent_color);
                 if (config.border_color) root.style.setProperty('--border-color', config.border_color);
                 if (config.warning_color) root.style.setProperty('--warning-color', config.warning_color);
             
-                // Aplicar Preferencias del Sistema
                 if (config.lowercase_path) {
                     document.body.classList.add('lowercase-path');
                 } else {
                     document.body.classList.remove('lowercase-path');
                 }
+
+                const rawMode = config.thumbnail_mode || 'fit';
+                const mode = String(rawMode).toLowerCase() === 'fit' ? 'fit' : 'fill';
+                this.thumbnailMode = mode;
             
-                // Despachar evento para otros módulos (como Ajustes) para que actualicen su UI
                 document.dispatchEvent(new CustomEvent('configApplied', { detail: config }));
             }
         };

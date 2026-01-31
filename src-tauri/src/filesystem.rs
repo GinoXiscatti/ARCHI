@@ -1,10 +1,10 @@
-use crate::models::{Client, FileItem, Metadata};
+use crate::models::{Client, FileItem, LayoutPosition, Metadata};
 use crate::paths::{get_config_path, get_user_data_dir};
 use crate::setup_directories::ensure_user_setup;
 use drag::{self, DragItem, DragMode, Image, Options};
 use std::fs;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::SystemTime;
 use tauri::Emitter;
@@ -251,11 +251,13 @@ pub fn toggle_pin_client(name: String, pin: bool) -> Result<(), String> {
             .unwrap_or(Metadata {
                 fecha: None,
                 pin: None,
+                layout: None,
             })
     } else {
         Metadata {
             fecha: None,
             pin: None,
+            layout: None,
         }
     };
 
@@ -271,12 +273,23 @@ pub fn toggle_pin_client(name: String, pin: bool) -> Result<(), String> {
 // ==========================================
 
 #[tauri::command]
-pub fn list_files(folder: String) -> Result<Vec<FileItem>, String> {
+pub fn list_files(folder: String) -> Result<crate::models::FileList, String> {
     let folder_path = resolve_path(&folder, "Biblioteca");
 
     if !folder_path.exists() || !folder_path.is_dir() {
         return Err("Carpeta no encontrada".to_string());
     }
+
+    // Leer layout si existe
+    let meta_path = folder_path.join(".metadatos.json");
+    let mut layout = if meta_path.exists() {
+        fs::read_to_string(&meta_path)
+            .ok()
+            .and_then(|c| serde_json::from_str::<Metadata>(&c).ok())
+            .and_then(|m| m.layout)
+    } else {
+        None
+    };
 
     let mut files = Vec::new();
 
@@ -373,7 +386,40 @@ pub fn list_files(folder: String) -> Result<Vec<FileItem>, String> {
         }
     }
 
-    Ok(files)
+    // Limpiar referencias de layout a elementos que ya no existen
+    if let Some(ref mut layout_map) = layout {
+        let valid_ids: std::collections::HashSet<String> =
+            files.iter().map(|f| f.name.clone()).collect();
+        let before_len = layout_map.len();
+        layout_map.retain(|id, _| valid_ids.contains(id));
+
+        if layout_map.len() != before_len {
+            let mut meta = if meta_path.exists() {
+                fs::read_to_string(&meta_path)
+                    .ok()
+                    .and_then(|c| serde_json::from_str::<Metadata>(&c).ok())
+                    .unwrap_or(Metadata {
+                        fecha: None,
+                        pin: None,
+                        layout: None,
+                    })
+            } else {
+                Metadata {
+                    fecha: None,
+                    pin: None,
+                    layout: None,
+                }
+            };
+
+            meta.layout = Some(layout_map.clone());
+
+            if let Ok(json) = serde_json::to_string_pretty(&meta) {
+                let _ = fs::write(&meta_path, json);
+            }
+        }
+    }
+
+    Ok(crate::models::FileList { files, layout })
 }
 
 #[tauri::command]
@@ -409,6 +455,44 @@ pub fn save_work_note(folder: String, content: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn save_work_layout(folder: String, positions: Vec<LayoutPosition>) -> Result<(), String> {
+    let folder_path = resolve_path(&folder, "Biblioteca");
+
+    if !folder_path.exists() || !folder_path.is_dir() {
+        return Err("Carpeta no encontrada".to_string());
+    }
+
+    let meta_path = folder_path.join(".metadatos.json");
+
+    let mut meta = if meta_path.exists() {
+        fs::read_to_string(&meta_path)
+            .ok()
+            .and_then(|c| serde_json::from_str::<Metadata>(&c).ok())
+            .unwrap_or(Metadata {
+                fecha: None,
+                pin: None,
+                layout: None,
+            })
+    } else {
+        Metadata {
+            fecha: None,
+            pin: None,
+            layout: None,
+        }
+    };
+
+    let mut layout_map = std::collections::HashMap::new();
+    for p in positions {
+        layout_map.insert(p.id, crate::models::FileLayout { x: p.x, y: p.y });
+    }
+    meta.layout = Some(layout_map);
+
+    let json = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?;
+    fs::write(meta_path, json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn create_folder(parent: String, name: String) -> Result<(), String> {
     let target_base = resolve_path(&parent, "Biblioteca");
     let target_path = target_base.join(&name);
@@ -432,6 +516,7 @@ pub fn create_folder(parent: String, name: String) -> Result<(), String> {
         let meta = Metadata {
             fecha: Some(now),
             pin: None,
+            layout: None,
         };
         let json = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?;
         fs::write(meta_path, json).map_err(|e| e.to_string())?;
@@ -440,6 +525,36 @@ pub fn create_folder(parent: String, name: String) -> Result<(), String> {
         let note_path = target_path.join(".work-note.md");
         if !note_path.exists() {
             fs::write(&note_path, "").map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
+fn update_metadata_layout_on_rename(
+    base_path: &std::path::Path,
+    old_name: &str,
+    new_name: &str,
+) -> Result<(), String> {
+    let meta_path = base_path.join(".metadatos.json");
+    if !meta_path.exists() {
+        return Ok(());
+    }
+
+    let mut meta: Metadata = fs::read_to_string(&meta_path)
+        .ok()
+        .and_then(|c| serde_json::from_str(&c).ok())
+        .unwrap_or(Metadata {
+            fecha: None,
+            pin: None,
+            layout: None,
+        });
+
+    if let Some(ref mut layout) = meta.layout {
+        if let Some(pos) = layout.remove(old_name) {
+            layout.insert(new_name.to_string(), pos);
+            let json = serde_json::to_string_pretty(&meta).map_err(|e| e.to_string())?;
+            fs::write(meta_path, json).map_err(|e| e.to_string())?;
         }
     }
 
@@ -460,6 +575,10 @@ pub fn rename_folder(parent: String, old_name: String, new_name: String) -> Resu
     }
 
     fs::rename(old_path, new_path).map_err(|e| e.to_string())?;
+
+    // Actualizar layout en metadatos si existe
+    let _ = update_metadata_layout_on_rename(&base_path, &old_name, &new_name);
+
     Ok(())
 }
 
@@ -983,6 +1102,10 @@ pub fn rename_resource(parent: String, old_name: String, new_name: String) -> Re
     }
 
     fs::rename(old_path, new_path).map_err(|e| e.to_string())?;
+
+    // Actualizar layout en metadatos si existe
+    let _ = update_metadata_layout_on_rename(&base_path, &old_name, &new_name);
+
     Ok(())
 }
 

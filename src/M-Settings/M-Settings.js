@@ -235,6 +235,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const thumbToggle = document.getElementById('thumbnail-mode-toggle');
+    if (thumbToggle) {
+        thumbToggle.addEventListener('change', (e) => {
+            const mode = e.target.checked ? 'fit' : 'fill';
+            saveConfig({ thumbnail_mode: mode });
+            
+            // Actualizar estado global y visual inmediatamente
+            if (window.utils) window.utils.thumbnailMode = mode;
+            
+            const thumbs = document.querySelectorAll('.adobe-thumb');
+            thumbs.forEach(img => {
+                if (mode === 'fit') {
+                    img.classList.add('thumb-fit-contain');
+                } else {
+                    img.classList.remove('thumb-fit-contain');
+                }
+            });
+        });
+
+        const container = thumbToggle.closest('.system-preference-config');
+        if (container) {
+            container.addEventListener('click', (e) => {
+                if (e.target !== thumbToggle && !thumbToggle.contains(e.target)) {
+                    thumbToggle.checked = !thumbToggle.checked;
+                    thumbToggle.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+    }
+
     // Listener para restablecer color desde el menú contextual
     document.addEventListener('resetColor', (e) => {
         const { prefix, color } = e.detail;
@@ -473,6 +503,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const lowercaseToggle = document.getElementById('lowercase-path-toggle');
         if (lowercaseToggle && config.lowercase_path !== undefined) {
             lowercaseToggle.checked = !config.lowercase_path;
+        }
+
+        const thumbToggle = document.getElementById('thumbnail-mode-toggle');
+        if (thumbToggle) {
+            const mode = config.thumbnail_mode || 'fit';
+            thumbToggle.checked = (mode === 'fit');
         }
     });
 });

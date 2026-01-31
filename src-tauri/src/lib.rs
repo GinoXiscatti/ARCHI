@@ -151,6 +151,7 @@ pub fn run() {
             filesystem::delete_folder,
             filesystem::read_work_note,
             filesystem::save_work_note,
+            filesystem::save_work_layout,
             filesystem::import_dropped_items,
             filesystem::import_dropped_resources,
             // Sistema de Archivos - Recursos
